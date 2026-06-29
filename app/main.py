@@ -1,0 +1,31 @@
+import os
+from dotenv import load_dotenv
+
+# Load variables from .env
+load_dotenv()
+
+# Fetch GitHub PAT
+GITHUB_PAT_TOKEN = os.getenv("GITHUB_PAT_TOKEN")
+
+if not GITHUB_PAT_TOKEN:
+    raise ValueError("GITHUB_PAT_TOKEN is not set in the .env file.")
+
+from fastapi import FastAPI
+from api.routes import router
+
+app = FastAPI(
+    title="Cognee Ingestion API",
+    description="Ingests GitHub repositories (and more) into cognee for RAG / knowledge-graph workflows.",
+    version="0.1.0",
+)
+
+app.include_router(router, prefix="/api/v1")
+
+
+# ---------------------------------------------------------------------------
+# Dev entrypoint
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

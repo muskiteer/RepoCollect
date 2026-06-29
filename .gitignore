@@ -1,0 +1,5 @@
+.venv
+Repollect-architecture.md
+ingest.md
+app/.env
+__pycache__/

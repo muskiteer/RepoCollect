@@ -1,8 +1,16 @@
+from pathlib import Path
 import os
+
 from dotenv import load_dotenv
 
-# Load variables from .env
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+ENV_FILE = BASE_DIR / ".env"
+
+load_dotenv(ENV_FILE, override=True)
+
+print(f"Loaded .env from: {ENV_FILE}")
+print("LLM_PROVIDER =", os.getenv("LLM_PROVIDER"))
+print("LLM_MODEL =", os.getenv("LLM_MODEL"))
 
 # Fetch GitHub PAT
 GITHUB_PAT_TOKEN = os.getenv("GITHUB_PAT_TOKEN")

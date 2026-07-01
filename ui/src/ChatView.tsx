@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import type { View, Project } from './App'
+import type { View, Project } from './types'
 
 interface Props {
   onNavigate: (view: View, project?: Project) => void
@@ -15,7 +15,7 @@ interface Message {
 const SEED_MESSAGES: Message[] = [
   {
     role: 'ai',
-    text: `Hey! I've ingested **${'{project}'}** — ${'{total}'} items across GitHub, Discord, and Notion. Ask me anything about the project history, contributors, or recent decisions.`,
+    text: `Hey! I've ingested **{project}** — {total} items across GitHub, Discord, and Notion. Ask me anything about the project history, contributors, or recent decisions. You can also type /issue to open a GitHub issue or /Notion to create a Notion page.`,
     ts: 'now',
   },
 ]
@@ -24,28 +24,9 @@ const SUGGESTED = [
   'What are the most discussed open issues?',
   'Who are the top contributors in the last 90 days?',
   'Summarize the latest PR decisions',
-  'What did the team discuss about performance?',
-  'Which Discord threads mention breaking changes?',
+  '/issue Fix the memory leak in the core worker',
+  '/Notion Create a meeting agenda for tomorrow',
 ]
-
-const AI_REPLIES: Record<string, string> = {
-  default:
-    'Based on the ingested data, I can see several relevant discussions and commits related to your question. The knowledge graph links 47 related items — would you like me to dive deeper into any specific area?',
-  contributors:
-    'Top contributors over the last 90 days: **@gaearon** (42 commits, 18 PRs merged), **@sebmarkbage** (29 commits), **@acdlite** (24 commits). Community contributors accounted for 31% of all merged PRs.',
-  issues:
-    'The 5 most-discussed open issues by comment count: #2901 "Suspense boundary leak" (87 comments), #2887 "useEffect double-fire in strict mode" (64 comments), #2856 "Hydration mismatch warnings" (58 comments).',
-  performance:
-    'Performance was discussed in 23 Discord threads and 12 GitHub issues. Key themes: concurrent rendering overhead in deep trees (Issue #2834), and a proposal to cache reconciler intermediate states (PR #2812, now merged).',
-}
-
-function getReply(msg: string): string {
-  const lower = msg.toLowerCase()
-  if (lower.includes('contribut')) return AI_REPLIES.contributors
-  if (lower.includes('issue') || lower.includes('discuss')) return AI_REPLIES.issues
-  if (lower.includes('perform') || lower.includes('speed')) return AI_REPLIES.performance
-  return AI_REPLIES.default
-}
 
 function fmtTime(d: Date) {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -63,27 +44,58 @@ export default function ChatView({ onNavigate, project }: Props) {
   )
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
+  const [convId, setConvId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    async function initConv() {
+      try {
+        const res = await fetch(`/api/v1/projects/${project.id}/conversations`, { method: 'POST' })
+        const data = await res.json()
+        setConvId(data.id)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    initConv()
+  }, [project.id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, thinking])
 
-  function send(text?: string) {
+  async function send(text?: string) {
     const msg = (text ?? input).trim()
-    if (!msg || thinking) return
+    if (!msg || thinking || !convId) return
+    
     const now = fmtTime(new Date())
     setMessages(prev => [...prev, { role: 'user', text: msg, ts: now }])
     setInput('')
     setThinking(true)
-    setTimeout(() => {
-      setThinking(false)
+    
+    try {
+      const res = await fetch(`/api/v1/chat/${convId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      })
+      const data = await res.json()
+      
+      let replyTime = now
+      if (data.created_at) {
+        replyTime = fmtTime(new Date(data.created_at))
+      }
+      
       setMessages(prev => [...prev, {
         role: 'ai',
-        text: getReply(msg),
-        ts: fmtTime(new Date()),
+        text: data.content || 'No response.',
+        ts: replyTime
       }])
-    }, 1200 + Math.random() * 600)
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'ai', text: 'Error connecting to the API.', ts: fmtTime(new Date()) }])
+    } finally {
+      setThinking(false)
+    }
   }
 
   return (
@@ -111,10 +123,17 @@ export default function ChatView({ onNavigate, project }: Props) {
           <button
             className="btn btn-white"
             style={{ fontSize: '11px', padding: '7px 14px' }}
-            onClick={() => setMessages(SEED_MESSAGES.map(m => ({
-              ...m,
-              text: m.text.replace('{project}', project.name).replace('{total}', total.toLocaleString()),
-            })))}
+            onClick={async () => {
+              setMessages(SEED_MESSAGES.map(m => ({
+                ...m,
+                text: m.text.replace('{project}', project.name).replace('{total}', total.toLocaleString()),
+              })))
+              try {
+                const res = await fetch(`/api/v1/projects/${project.id}/conversations`, { method: 'POST' })
+                const data = await res.json()
+                setConvId(data.id)
+              } catch (e) {}
+            }}
           >
             Clear
           </button>
@@ -164,7 +183,7 @@ export default function ChatView({ onNavigate, project }: Props) {
               id="chat-send"
               className="chat-send-btn"
               onClick={() => send()}
-              disabled={!input.trim() || thinking}
+              disabled={!input.trim() || thinking || !convId}
             >
               SEND →
             </button>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
 import Home from './Home'
 import AddProject from './AddProject'
@@ -6,81 +6,8 @@ import BrowseProjects from './BrowseProjects'
 import ProjectDetail from './ProjectDetail'
 import ChatView from './ChatView'
 
-export type View =
-  | 'home'
-  | 'add-project'
-  | 'browse'
-  | 'project-detail'
-  | 'chat'
+import type { View, Project } from './types'
 
-export interface Project {
-  id: string
-  name: string
-  owner: string
-  repo: string
-  status: 'INDEXED' | 'PENDING' | 'FAILED'
-  github: number
-  discord: number
-  notion: number
-  description: string
-  lastSync: string
-  llm: string
-}
-
-export const MOCK_PROJECTS: Project[] = [
-  {
-    id: 'p1',
-    name: 'React',
-    owner: 'facebook',
-    repo: 'react',
-    status: 'INDEXED',
-    github: 142,
-    discord: 87,
-    notion: 23,
-    description: 'The library for web and native user interfaces.',
-    lastSync: '2 hours ago',
-    llm: 'ollama',
-  },
-  {
-    id: 'p2',
-    name: 'Cognee',
-    owner: 'topoteretes',
-    repo: 'cognee',
-    status: 'INDEXED',
-    github: 318,
-    discord: 204,
-    notion: 11,
-    description: 'Deterministic memory and reasoning for AI agents.',
-    lastSync: '45 min ago',
-    llm: 'gemini',
-  },
-  {
-    id: 'p3',
-    name: 'FastAPI',
-    owner: 'tiangolo',
-    repo: 'fastapi',
-    status: 'PENDING',
-    github: 59,
-    discord: 0,
-    notion: 4,
-    description: 'Modern, fast web framework for building APIs with Python.',
-    lastSync: 'Ingesting...',
-    llm: 'ollama',
-  },
-  {
-    id: 'p4',
-    name: 'LangChain',
-    owner: 'langchain-ai',
-    repo: 'langchain',
-    status: 'FAILED',
-    github: 0,
-    discord: 0,
-    notion: 0,
-    description: 'Build context-aware reasoning applications.',
-    lastSync: 'Failed 1 day ago',
-    llm: 'gemini',
-  },
-]
 
 const NAV_ITEMS = [
   { id: 'home',       label: 'Dashboard',    icon: '⊞' },
@@ -91,10 +18,54 @@ const NAV_ITEMS = [
 
 function App() {
   const [view, setView] = useState<View>('home')
-  const [activeProject, setActiveProject] = useState<Project>(MOCK_PROJECTS[0])
+  const [activeProject, setActiveProject] = useState<Project | undefined>()
+  const [projects, setProjects] = useState<Project[]>([])
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch('/api/v1/projects')
+      const data = await res.json()
+      const mapped = data.map((d: any) => ({
+        id: d.id,
+        name: d.repo_name,
+        owner: d.repo_owner,
+        repo: d.repo_name,
+        status: d.status || 'PENDING',
+        github: 1, 
+        discord: 0,
+        notion: 0,
+        description: `Dataset: ${d.dataset}`,
+        lastSync: d.last_synced_at ? new Date(d.last_synced_at).toLocaleString() : 'Never',
+        llm: 'ollama'
+      }))
+      setProjects(prev => {
+        prev.forEach(p => {
+          const next = mapped.find((n: any) => n.id === p.id)
+          if (next && p.status === 'SYNCING') {
+            if (next.status === 'INDEXED') {
+              alert(`Sync completed for ${p.name}!`)
+            } else if (next.status === 'FAILED') {
+              alert(`Sync failed for ${p.name}.`)
+            }
+          }
+        })
+        return mapped
+      })
+      setActiveProject(prev => prev ? (mapped.find((p: any) => p.id === prev.id) || prev) : prev)
+    } catch (e) {
+      console.error('Failed to fetch projects', e)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjects()
+    const interval = setInterval(fetchProjects, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   function handleNavigate(v: View, project?: Project) {
     if (project) setActiveProject(project)
+    if (v === 'browse') fetchProjects()
     setView(v)
   }
 
@@ -135,17 +106,29 @@ function App() {
                 Backend Live
               </span>
             </div>
-            <div className="sidebar-version">v0.4.1 · BETA</div>
+            <div className="sidebar-version" style={{ marginBottom: '8px' }}>v0.4.1 · BETA</div>
+            <div className="sidebar-author" style={{ 
+              fontSize: '10px', 
+              color: '#888', 
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              borderTop: '2px dashed #333',
+              paddingTop: '8px',
+              marginTop: '8px'
+            }}>
+              Made by <span style={{ color: '#FFE500' }}>Vansh</span> aka <span style={{ color: '#FFE500' }}>muskiteer</span>
+            </div>
           </div>
         </aside>
 
         {/* ── Content ── */}
         <div className="content-area">
-          {view === 'home'           && <Home onNavigate={handleNavigate} projects={MOCK_PROJECTS} />}
+          {view === 'home'           && <Home onNavigate={handleNavigate} projects={projects} />}
           {view === 'add-project'    && <AddProject onNavigate={handleNavigate} />}
-          {view === 'browse'         && <BrowseProjects onNavigate={handleNavigate} projects={MOCK_PROJECTS} />}
-          {view === 'project-detail' && <ProjectDetail onNavigate={handleNavigate} project={activeProject} />}
-          {view === 'chat'           && <ChatView onNavigate={handleNavigate} project={activeProject} />}
+          {view === 'browse'         && <BrowseProjects onNavigate={handleNavigate} projects={projects} />}
+          {view === 'project-detail' && activeProject && <ProjectDetail onNavigate={handleNavigate} project={activeProject} />}
+          {view === 'chat'           && activeProject && <ChatView onNavigate={handleNavigate} project={activeProject} />}
         </div>
       </div>
     </div>

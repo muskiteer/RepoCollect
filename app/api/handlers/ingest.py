@@ -39,7 +39,7 @@ class IngestAllResponse(BaseModel):
 # Step 1 — Stage
 # ---------------------------------------------------------------------------
 
-async def stage_items(items: list) -> tuple[int, int, dict[str, str]]:
+async def stage_items(items: list, dataset: str) -> tuple[int, int, dict[str, str]]:
     """
     Deduplicates by content hash, then calls cognee.add() for each unique item.
 
@@ -89,7 +89,7 @@ async def stage_items(items: list) -> tuple[int, int, dict[str, str]]:
     for i, item in enumerate(unique):
         content = item.content if hasattr(item, "content") else str(item)
         try:
-            await add_to_cognee(content, dataset=DATASET)
+            await add_to_cognee(content, dataset=dataset)
             staged += 1
             logger.debug("[stage_items] Staged %d/%d", staged, len(unique))
         except Exception as exc:

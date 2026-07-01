@@ -1,5 +1,6 @@
 .venv
 Repollect-architecture.md
 ingest.md
+more.md
 app/.env
 __pycache__/

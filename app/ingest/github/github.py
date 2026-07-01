@@ -269,8 +269,8 @@ class GitHubIngestor:
 
             path = entry["path"]
 
-            # Set include_code=True if you want important source files too
-            if not should_ingest_file(path, include_code=True):
+            # Skip source code, only keep important documentation
+            if not should_ingest_file(path, include_code=False):
                 continue
 
             logger.debug("[ingest_files] Fetching file: %s", path)

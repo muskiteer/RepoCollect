@@ -159,16 +159,9 @@
 
 
 from fastapi import APIRouter
-from .handler import IngestAllRequest, IngestAllResponse, handle_ingest_all
 
 router = APIRouter()
-
 
 @router.get("/health", tags=["Health"])
 async def health() -> dict:
     return {"status": "ok"}
-
-
-@router.post("/ingest/all", response_model=IngestAllResponse, tags=["Ingestion"])
-async def ingest_all(body: IngestAllRequest) -> IngestAllResponse:
-    return await handle_ingest_all(body)

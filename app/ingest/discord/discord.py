@@ -239,28 +239,9 @@ class DiscordIngestor:
     def should_ingest_attachment(self, attachment: dict) -> bool:
         """
         Attachment filter:
-        - Ignore .exe, .zip, .mp4, .mov
-        - Keep .pdf, .drawio, .png, .md, .txt
+        - Skip all files from discord
         """
-        filename = attachment.get("filename", "").lower()
-        
-        IGNORE_EXTS = {
-                    ".exe",
-                    ".dll",
-                    ".msi",
-                    ".zip",
-                    ".rar",
-                    ".7z",
-                    ".mp4",
-                    ".mov",
-                }
-        
-        
-        for ext in IGNORE_EXTS:
-            if filename.endswith(ext):
-                return False
-                
-        return True
+        return False
 
     # ------------------------------------------------------------------
     # Public API

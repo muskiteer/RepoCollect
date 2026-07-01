@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { View } from './App'
+import type { View } from './types'
 
 interface Props {
   onNavigate: (view: View) => void
@@ -9,6 +9,9 @@ interface FormState {
   projectName: string
   githubOwner: string
   githubRepo: string
+  githubToken: string
+  notionToken: string
+  discordToken: string
   discordGuildIds: string
   llmProvider: string
   notes: string
@@ -18,6 +21,9 @@ const initial: FormState = {
   projectName: '',
   githubOwner: '',
   githubRepo: '',
+  githubToken: '',
+  notionToken: '',
+  discordToken: '',
   discordGuildIds: '',
   llmProvider: 'ollama',
   notes: '',
@@ -32,30 +38,52 @@ export default function AddProject({ onNavigate }: Props) {
     setForm(p => ({ ...p, [field]: val }))
   }
 
-  function handleIngest() {
-    if (!form.projectName || !form.githubOwner || !form.githubRepo) {
-      setLog(['⚠ Please fill in Project Name, GitHub Owner, and Repo.'])
+  async function handleIngest() {
+    if (!form.projectName || !form.githubOwner || !form.githubRepo || !form.githubToken) {
+      setLog(['⚠ Please fill in Project Name, GitHub Owner, Repo, and GitHub Token.'])
       return
     }
     setStatus('loading')
-    const lines = [
-      `→ Connecting to github.com/${form.githubOwner}/${form.githubRepo}...`,
-      '→ Fetching issues and pull requests...',
-      form.discordGuildIds ? `→ Connecting to Discord guilds: ${form.discordGuildIds}` : '→ Discord: skipped (no guild IDs)',
-      `→ LLM provider: ${form.llmProvider}`,
-      '→ Building knowledge graph...',
-      '✓ Ingestion queued. Results will appear in Projects.',
-    ]
-    setLog([])
-    lines.forEach((line, i) => {
+    setLog(['→ Contacting API and validating tokens...'])
+    
+    try {
+      const res = await fetch('/api/v1/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo_owner: form.githubOwner,
+          repo_name: form.githubRepo,
+          dataset: form.projectName,
+          github_token: form.githubToken,
+          notion_token: form.notionToken || undefined,
+          discord_token: form.discordToken || undefined
+        })
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to create project')
+      }
+      
+      setLog(prev => [...prev, `✓ Auth verified. Project ${data.id} created successfully!`, '→ Starting background ingestion...'])
+      
+      const ingestRes = await fetch(`/api/v1/projects/${data.id}/ingest`, { method: 'POST' })
+      if (!ingestRes.ok) {
+        throw new Error('Failed to start ingestion')
+      }
+
+      setLog(prev => [...prev, '✓ Ingestion queued. Returning to projects view...'])
+      setStatus('done')
       setTimeout(() => {
-        setLog(prev => [...prev, line])
-        if (i === lines.length - 1) {
-          setStatus('done')
-          console.log('[REPOLLECT] Ingest payload:', form)
-        }
-      }, i * 600)
-    })
+        onNavigate('browse')
+      }, 1000)
+      
+    } catch (e: any) {
+      console.error(e)
+      setLog(prev => [...prev, `⚠ Error: ${e.message}`])
+      setStatus('idle')
+    }
   }
 
   return (
@@ -114,7 +142,7 @@ export default function AddProject({ onNavigate }: Props) {
             <SectionLabel>Project Identity</SectionLabel>
 
             <div className="field">
-              <label className="field-label" htmlFor="project-name">Project Name *</label>
+              <label className="field-label" htmlFor="project-name">Project Name (Dataset) *</label>
               <input id="project-name" className="input" placeholder="my-awesome-repo"
                 value={form.projectName} onChange={e => set('projectName', e.target.value)} />
             </div>
@@ -130,6 +158,13 @@ export default function AddProject({ onNavigate }: Props) {
                 <input id="github-repo" className="input" placeholder="react"
                   value={form.githubRepo} onChange={e => set('githubRepo', e.target.value)} />
               </div>
+            </div>
+
+            <div className="field">
+              <label className="field-label" htmlFor="github-token">GitHub Token *</label>
+              <input id="github-token" className="input" type="password" placeholder="ghp_..."
+                value={form.githubToken} onChange={e => set('githubToken', e.target.value)} />
+              <span className="field-hint">Required. Token will be validated instantly.</span>
             </div>
 
             {/* Repo preview */}
@@ -166,6 +201,26 @@ export default function AddProject({ onNavigate }: Props) {
             <SectionLabel>Optional Sources</SectionLabel>
 
             <div className="field">
+              <label className="field-label" htmlFor="notion-token">
+                Notion Integration Token
+                <span style={{ color: '#aaa', fontWeight: 400, marginLeft: '6px', textTransform: 'none', fontSize: '10px' }}>optional</span>
+              </label>
+              <input id="notion-token" className="input" type="password"
+                placeholder="secret_..."
+                value={form.notionToken} onChange={e => set('notionToken', e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label className="field-label" htmlFor="discord-token">
+                Discord Bot Token
+                <span style={{ color: '#aaa', fontWeight: 400, marginLeft: '6px', textTransform: 'none', fontSize: '10px' }}>optional</span>
+              </label>
+              <input id="discord-token" className="input" type="password"
+                placeholder="MTE..."
+                value={form.discordToken} onChange={e => set('discordToken', e.target.value)} />
+            </div>
+
+            <div className="field">
               <label className="field-label" htmlFor="discord-guilds">
                 Discord Guild IDs
                 <span style={{ color: '#aaa', fontWeight: 400, marginLeft: '6px', textTransform: 'none', fontSize: '10px' }}>optional</span>
@@ -173,14 +228,6 @@ export default function AddProject({ onNavigate }: Props) {
               <input id="discord-guilds" className="input"
                 placeholder="123456789, 987654321"
                 value={form.discordGuildIds} onChange={e => set('discordGuildIds', e.target.value)} />
-              <span className="field-hint">Comma-separated. Leave blank to skip Discord.</span>
-            </div>
-
-            <div className="field">
-              <label className="field-label" htmlFor="notes">Context Notes</label>
-              <textarea id="notes" className="textarea" rows={5}
-                placeholder="Any context about this project — what it does, key contributors, important threads..."
-                value={form.notes} onChange={e => set('notes', e.target.value)} />
             </div>
 
             {/* Checklist */}
@@ -199,8 +246,8 @@ export default function AddProject({ onNavigate }: Props) {
               </div>
               {[
                 { ok: !!form.projectName,    text: 'Project name set' },
-                { ok: !!form.githubOwner,    text: 'GitHub owner set' },
-                { ok: !!form.githubRepo,     text: 'GitHub repo set' },
+                { ok: !!form.githubOwner && !!form.githubRepo, text: 'GitHub repo set' },
+                { ok: !!form.githubToken,    text: 'GitHub token provided' },
                 { ok: form.llmProvider !== '',text: 'LLM provider selected' },
               ].map((c, i) => (
                 <div key={i} style={{
@@ -228,10 +275,10 @@ export default function AddProject({ onNavigate }: Props) {
           disabled={status === 'loading'}
         >
           {status === 'loading'
-            ? '⟳  Ingesting...'
+            ? '⟳  Validating...'
             : status === 'done'
-            ? '✓  Queued — View in Projects'
-            : 'INGEST PROJECT →'}
+            ? '✓  Created — Redirecting'
+            : 'CREATE PROJECT →'}
         </button>
 
         {/* Log box */}
@@ -241,11 +288,11 @@ export default function AddProject({ onNavigate }: Props) {
             letterSpacing: '0.12em', textTransform: 'uppercase',
             color: '#999', marginBottom: '8px',
           }}>
-            Ingestion Log
+            Creation Log
           </div>
           <div className="status-box" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', minHeight: '110px' }}>
             {log.length === 0
-              ? 'Ingestion results will appear here...'
+              ? 'Results will appear here...'
               : log.map((line, i) => (
                   <div key={i} style={{
                     color: line.startsWith('✓') ? '#00E5A0'

@@ -19,7 +19,9 @@ if not GITHUB_PAT_TOKEN:
     raise ValueError("GITHUB_PAT_TOKEN is not set in the .env file.")
 
 from fastapi import FastAPI
-from api.routes import router
+from api.routes.ingest import router as ingest_router
+from api.routes.projects import router as projects_router
+from api.routes.chat import router as chat_router
 
 app = FastAPI(
     title="Cognee Ingestion API",
@@ -27,8 +29,20 @@ app = FastAPI(
     version="0.1.0",
 )
 
-app.include_router(router, prefix="/api/v1")
+app.include_router(ingest_router, prefix="/api/v1")
+app.include_router(projects_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
 
+
+# ---------------------------------------------------------------------------
+# Background Tasks
+# ---------------------------------------------------------------------------
+from internal.scheduler import poll_github_projects
+import asyncio
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(poll_github_projects())
 
 # ---------------------------------------------------------------------------
 # Dev entrypoint

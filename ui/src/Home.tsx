@@ -1,4 +1,4 @@
-import type { View, Project } from './App'
+import type { View, Project } from './types'
 
 interface Props {
   onNavigate: (view: View, project?: Project) => void

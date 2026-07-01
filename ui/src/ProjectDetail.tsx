@@ -1,4 +1,4 @@
-import type { View, Project } from './App'
+import type { View, Project } from './types'
 
 interface Props {
   onNavigate: (view: View, project?: Project) => void
@@ -19,6 +19,18 @@ export default function ProjectDetail({ onNavigate, project }: Props) {
   const statusColor = project.status === 'INDEXED' ? '#00E5A0'
                     : project.status === 'PENDING' ? '#FFE500'
                     : '#FF3B00'
+
+  async function handleDelete() {
+    if (!confirm('Delete this project?')) return
+    try {
+      const res = await fetch(`/api/v1/projects/${project.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
+      onNavigate('browse')
+    } catch (e) {
+      console.error(e)
+      alert('Failed to delete project')
+    }
+  }
 
   return (
     <div>
@@ -185,9 +197,20 @@ export default function ProjectDetail({ onNavigate, project }: Props) {
               </button>
               <button
                 className="btn btn-yellow btn-full"
-                onClick={() => alert('Re-sync triggered (API coming soon)')}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/v1/projects/${project.id}/sync`, { method: 'POST' });
+                    if (!res.ok) throw new Error('Failed to start sync');
+                    alert('Sync job started! Check dashboard for status.');
+                    onNavigate('browse');
+                  } catch (e) {
+                    console.error(e);
+                    alert('Failed to start sync');
+                  }
+                }}
+                disabled={project.status === 'SYNCING'}
               >
-                ⟳ Re-sync Sources
+                {project.status === 'SYNCING' ? '⟳ Syncing...' : '⟳ Re-sync Sources'}
               </button>
               <button
                 className="btn btn-white btn-full"
@@ -197,7 +220,7 @@ export default function ProjectDetail({ onNavigate, project }: Props) {
               </button>
               <button
                 className="btn btn-danger btn-full"
-                onClick={() => confirm('Delete this project?') && onNavigate('browse')}
+                onClick={handleDelete}
               >
                 ✕ Delete Project
               </button>

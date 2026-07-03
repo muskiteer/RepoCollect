@@ -170,7 +170,40 @@ export default function ChatView({ onNavigate, project }: Props) {
           </div>
 
           {/* Input bar */}
-          <div className="chat-input-bar">
+          <div className="chat-input-bar" style={{ position: 'relative' }}>
+            {input === '/' && (
+              <div style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: '20px',
+                marginBottom: '10px',
+                background: '#fff',
+                border: '2px solid #000',
+                boxShadow: '4px 4px 0 #000',
+                padding: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                zIndex: 10,
+                minWidth: '240px'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#888', textTransform: 'uppercase', marginBottom: '4px', paddingLeft: '8px' }}>Available Tools</div>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('/issue '); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>/issue</span> — Create GitHub Issue
+                </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('/Notion '); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>/Notion</span> — Create Notion Page
+                </button>
+              </div>
+            )}
             <input
               id="chat-input"
               className="input"

@@ -83,7 +83,10 @@ class DiscordIngestor:
 
     BASE_URL = "https://discord.com/api/v10"
 
-    def __init__(self, token: str | None = None, allowed_guilds: list[str] | None = None) -> None:
+    # Discord epoch: first second of 2015 in ms
+    DISCORD_EPOCH = 1420070400000
+
+    def __init__(self, token: str | None = None, allowed_guilds: list[str] | None = None, since: str | None = None) -> None:
         resolved_token = token or os.getenv("DISCORD_BOT_TOKEN")
         if not resolved_token:
             raise ValueError(
@@ -92,6 +95,8 @@ class DiscordIngestor:
             )
 
         self.allowed_guilds = allowed_guilds or []
+        self.since = since
+        self.since_snowflake = self._timestamp_to_snowflake(since) if since else None
 
         logger.info("[DiscordIngestor] Initialised (token present: %s)", bool(resolved_token))
 
@@ -103,6 +108,14 @@ class DiscordIngestor:
                 "Content-Type": "application/json",
             },
         )
+
+    @staticmethod
+    def _timestamp_to_snowflake(iso_ts: str) -> str:
+        """Convert an ISO-8601 timestamp to a Discord snowflake ID."""
+        dt = datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
+        ms = int(dt.timestamp() * 1000)
+        snowflake = (ms - DiscordIngestor.DISCORD_EPOCH) << 22
+        return str(snowflake)
     async def attachment_to_dataitem(
         self,
         attachment: dict,
@@ -386,6 +399,9 @@ class DiscordIngestor:
             params = {"limit": 100}
             if before:
                 params["before"] = before
+            # On the first page, use the since snowflake to skip old messages
+            if self.since_snowflake and page == 1 and not before:
+                params["after"] = self.since_snowflake
                 
             data = await self.request("GET", f"/channels/{channel_id}/messages", params=params)
             

@@ -33,6 +33,7 @@ export default function AddProject({ onNavigate }: Props) {
   const [form, setForm] = useState<FormState>(initial)
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
   const [log, setLog] = useState<string[]>([])
+  const [files, setFiles] = useState<File[]>([])
 
   function set(field: keyof FormState, val: string) {
     setForm(p => ({ ...p, [field]: val }))
@@ -66,7 +67,25 @@ export default function AddProject({ onNavigate }: Props) {
         throw new Error(data.detail || 'Failed to create project')
       }
       
-      setLog(prev => [...prev, `✓ Auth verified. Project ${data.id} created successfully!`, '→ Starting background ingestion...'])
+      setLog(prev => [...prev, `✓ Auth verified. Project ${data.id} created successfully!`])
+
+      // Upload files if any
+      if (files.length > 0) {
+        setLog(prev => [...prev, `→ Uploading ${files.length} file(s)...`])
+        const formData = new FormData()
+        files.forEach(f => formData.append('files', f))
+        const uploadRes = await fetch(`/api/v1/files/${encodeURIComponent(form.projectName)}/upload`, {
+          method: 'POST',
+          body: formData
+        })
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload files')
+        }
+        const uploadData = await uploadRes.json()
+        setLog(prev => [...prev, `✓ ${uploadData.uploaded} file(s) uploaded.`])
+      }
+
+      setLog(prev => [...prev, '→ Starting background ingestion...'])
       
       const ingestRes = await fetch(`/api/v1/projects/${data.id}/ingest`, { method: 'POST' })
       if (!ingestRes.ok) {
@@ -228,6 +247,73 @@ export default function AddProject({ onNavigate }: Props) {
               <input id="discord-guilds" className="input"
                 placeholder="123456789, 987654321"
                 value={form.discordGuildIds} onChange={e => set('discordGuildIds', e.target.value)} />
+            </div>
+
+            <SectionLabel>Upload Files</SectionLabel>
+
+            <div className="field">
+              <label className="field-label">
+                Local Documents
+                <span style={{ color: '#aaa', fontWeight: 400, marginLeft: '6px', textTransform: 'none', fontSize: '10px' }}>optional · PDF, MD, TXT</span>
+              </label>
+              <div
+                style={{
+                  border: '3px dashed #ccc',
+                  padding: '20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: files.length > 0 ? '#f0fdf4' : '#fafafa',
+                  transition: 'background 0.2s',
+                }}
+                onClick={() => document.getElementById('file-upload')?.click()}
+                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const dropped = Array.from(e.dataTransfer.files).filter(f =>
+                    /\.(pdf|md|txt)$/i.test(f.name)
+                  );
+                  setFiles(prev => [...prev, ...dropped]);
+                }}
+              >
+                <input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.md,.txt"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    if (e.target.files) {
+                      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                    }
+                  }}
+                />
+                <div style={{ fontSize: '24px', color: '#ccc', marginBottom: '6px' }}>📄</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#888' }}>
+                  {files.length > 0
+                    ? `${files.length} file(s) selected`
+                    : 'Drop files here or click to browse'}
+                </div>
+              </div>
+              {files.length > 0 && (
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {files.map((f, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      fontSize: '11px', padding: '4px 8px',
+                      border: '1px solid #eee', background: '#fafafa',
+                    }}>
+                      <span style={{ fontWeight: 600 }}>{f.name}</span>
+                      <button
+                        style={{ background: 'none', border: 'none', color: '#FF3B00', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}
+                        onClick={e => { e.stopPropagation(); setFiles(prev => prev.filter((_, j) => j !== i)); }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Checklist */}

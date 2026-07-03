@@ -76,7 +76,7 @@ async def poll_github_projects():
                     query = f"{title}\n{body}"
                     try:
                         context = await recall_data(query, datasets=[p["dataset"]], top_k=5)
-                        context_str = "\\n".join([str(c) for c in context]) if context else "No relevant context found in knowledge graph."
+                        context_str = "\n".join([str(c) for c in context]) if context else "No relevant context found in knowledge graph."
                     except Exception as e:
                         logger.error(f"[Scheduler] Failed to fetch context for #{issue['number']}: {e}")
                         context_str = "Could not retrieve context due to an error."
@@ -90,12 +90,12 @@ Use the following context from the project's knowledge graph to inform your resp
 """
                     llm_messages = [
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Title: {title}\\n\\nBody:\\n{body}\\n\\nPlease review this {item_type}."}
+                        {"role": "user", "content": f"Title: {title}\n\nBody:\n{body}\n\nPlease review this {item_type}."}
                     ]
                     
                     try:
                         ai_review = await _call_llm(llm_messages, expect_json=False)
-                        final_comment = f"🤖 **Automated AI Review**\\n\\n{ai_review}"
+                        final_comment = f"🤖 **Automated AI Review**\n\n{ai_review}"
                         
                         await leave_github_comment(
                             p["repo_owner"], p["repo_name"], issue["number"], final_comment, p["token"]

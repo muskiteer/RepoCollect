@@ -12,16 +12,14 @@ print(f"Loaded .env from: {ENV_FILE}")
 print("LLM_PROVIDER =", os.getenv("LLM_PROVIDER"))
 print("LLM_MODEL =", os.getenv("LLM_MODEL"))
 
-# Fetch GitHub PAT
-GITHUB_PAT_TOKEN = os.getenv("GITHUB_PAT_TOKEN")
-
-if not GITHUB_PAT_TOKEN:
-    raise ValueError("GITHUB_PAT_TOKEN is not set in the .env file.")
+# Legacy — tokens are now stored per-project in SQLite
+GITHUB_PAT_TOKEN = os.getenv("GITHUB_PAT_TOKEN", "")
 
 from fastapi import FastAPI
 from api.routes.ingest import router as ingest_router
 from api.routes.projects import router as projects_router
 from api.routes.chat import router as chat_router
+from api.routes.files import router as files_router
 
 app = FastAPI(
     title="Cognee Ingestion API",
@@ -32,6 +30,11 @@ app = FastAPI(
 app.include_router(ingest_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
+app.include_router(files_router, prefix="/api/v1")
+
+@app.get("/api/v1/health")
+def health_check():
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------

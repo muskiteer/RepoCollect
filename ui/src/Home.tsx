@@ -227,6 +227,25 @@ function MiniProjectRow({ project, onNavigate }: { project: Project; onNavigate:
         >
           View →
         </button>
+        <button
+          className="btn btn-danger"
+          style={{ fontSize: '11px', padding: '7px 14px' }}
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (!confirm('Delete this project?')) return;
+            try {
+              const res = await fetch(`/api/v1/projects/${project.id}`, { method: 'DELETE' });
+              if (!res.ok) throw new Error('Failed to delete');
+              onNavigate('home');
+              window.location.reload(); // Hard refresh to update stats quickly
+            } catch (err) {
+              console.error(err);
+              alert('Failed to delete project');
+            }
+          }}
+        >
+          ✕
+        </button>
       </div>
     </div>
   )

@@ -20,6 +20,21 @@ function App() {
   const [view, setView] = useState<View>('home')
   const [activeProject, setActiveProject] = useState<Project | undefined>()
   const [projects, setProjects] = useState<Project[]>([])
+  const [backendLive, setBackendLive] = useState(false)
+
+  useEffect(() => {
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/v1/health')
+        setBackendLive(res.ok)
+      } catch (e) {
+        setBackendLive(false)
+      }
+    }
+    checkHealth()
+    const int = setInterval(checkHealth, 5000)
+    return () => clearInterval(int)
+  }, [])
 
   const fetchProjects = async () => {
     try {
@@ -98,15 +113,14 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <div style={{
                 width: '8px', height: '8px',
-                background: '#00E5A0',
+                background: backendLive ? '#00E5A0' : '#FF4444',
                 border: '2px solid #333',
                 borderRadius: '50%',
               }} />
               <span style={{ fontSize: '10px', color: '#555', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Backend Live
+                Backend {backendLive ? 'Live' : 'Offline'}
               </span>
             </div>
-            <div className="sidebar-version" style={{ marginBottom: '8px' }}>v0.4.1 · BETA</div>
             <div className="sidebar-author" style={{ 
               fontSize: '10px', 
               color: '#888', 

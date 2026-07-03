@@ -198,7 +198,7 @@ async def handle_ingest_all(body: IngestAllRequest) -> IngestAllResponse:
     #   Discord ─┘
     # ------------------------------------------------------------------
 
-    staged, skipped, stage_errors = await stage_items(all_items)
+    staged, skipped, stage_errors = await stage_items(all_items, DATASET)
     errors.update(stage_errors)
 
     # ------------------------------------------------------------------

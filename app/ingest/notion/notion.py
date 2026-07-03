@@ -78,7 +78,7 @@ class NotionIngestor:
 
     BASE_URL = "https://api.notion.com/v1"
 
-    def __init__(self, token: str | None = None) -> None:
+    def __init__(self, token: str | None = None, since: str | None = None) -> None:
         resolved_token = token or os.getenv("NOTION_TOKEN")
         if not resolved_token:
             raise ValueError(
@@ -86,7 +86,8 @@ class NotionIngestor:
                 "or pass it explicitly to NotionIngestor(token=...)."
             )
 
-        logger.info("[NotionIngestor] Initialised (token present: %s)", bool(resolved_token))
+        self.since = since
+        logger.info("[NotionIngestor] Initialised (token present: %s, since=%s)", bool(resolved_token), since)
 
         self.client = httpx.AsyncClient(
             base_url=self.BASE_URL,
@@ -159,10 +160,15 @@ class NotionIngestor:
             body: dict[str, Any] = {"page_size": 100}
             if start_cursor:
                 body["start_cursor"] = start_cursor
+            if self.since:
+                body["filter"] = {
+                    "timestamp": "last_edited_time",
+                    "last_edited_time": {"after": self.since}
+                }
 
             logger.info(
-                "[search_pages] Fetching page %d (cursor=%s) ...",
-                page_num, start_cursor,
+                "[search_pages] Fetching page %d (cursor=%s, since=%s) ...",
+                page_num, start_cursor, self.since,
             )
             data = await self.request("POST", "/search", json=body)
 

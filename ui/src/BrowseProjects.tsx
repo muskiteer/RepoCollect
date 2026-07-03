@@ -121,6 +121,25 @@ export default function BrowseProjects({ onNavigate, projects }: Props) {
                 >
                   CHAT →
                 </button>
+                <button
+                  id={`delete-${project.id}`}
+                  className="btn btn-danger"
+                  style={{ fontSize: '11px', padding: '8px 16px' }}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!confirm('Delete this project?')) return;
+                    try {
+                      const res = await fetch(`/api/v1/projects/${project.id}`, { method: 'DELETE' });
+                      if (!res.ok) throw new Error('Failed to delete');
+                      onNavigate('browse');
+                    } catch (err) {
+                      console.error(err);
+                      alert('Failed to delete project');
+                    }
+                  }}
+                >
+                  ✕ DELETE
+                </button>
               </div>
             </div>
 

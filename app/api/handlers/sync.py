@@ -68,32 +68,34 @@ async def run_sync_job_background(project_id: str, job_id: str, is_initial: bool
 
         all_items = []
 
-        if is_initial:
-            if github_token:
-                logger.info("Running GitHub ingestor for %s/%s", github_owner, github_repo)
-                gh_items = await GitHubIngestor(github_owner, github_repo, github_token).ingest_all()
-                all_items.extend(gh_items)
-                
-            if notion_token:
-                logger.info("Running Notion ingestor")
-                notion_items = await NotionIngestor(notion_token).ingest_all()
-                all_items.extend(notion_items)
-                
-            if discord_token:
-                logger.info("Running Discord ingestor")
-                # We don't have allowed_guilds saved in db right now, pass empty to ingest all accessible
-                discord_items = await DiscordIngestor(discord_token, allowed_guilds=[]).ingest_all()
-                all_items.extend(discord_items)
+        last_synced = project["last_synced_at"] if not is_initial else None
+
+        if github_token:
+            logger.info("Running GitHub ingestor for %s/%s with since=%s", github_owner, github_repo, last_synced)
+            gh_items = await GitHubIngestor(github_owner, github_repo, github_token, since=last_synced).ingest_all()
+            all_items.extend(gh_items)
+            
+        if notion_token:
+            logger.info("Running Notion ingestor with since=%s", last_synced)
+            notion_items = await NotionIngestor(notion_token, since=last_synced).ingest_all()
+            all_items.extend(notion_items)
+            
+        if discord_token:
+            logger.info("Running Discord ingestor with since=%s", last_synced)
+            # We don't have allowed_guilds saved in db right now, pass empty to ingest all accessible
+            discord_items = await DiscordIngestor(discord_token, allowed_guilds=[], since=last_synced).ingest_all()
+            all_items.extend(discord_items)
+
+        # Local files
+        import os
+        from ingest.files.files import DocumentIngestor
+        data_dir = f"./data/{dataset}"
+        if os.path.exists(data_dir):
+            logger.info("Running Document ingestor on %s", data_dir)
+            doc_items = await DocumentIngestor(data_dir).ingest_all()
+            all_items.extend(doc_items)
         else:
-            import os
-            from ingest.files.files import DocumentIngestor
-            data_dir = f"./data/{dataset}"
-            if os.path.exists(data_dir):
-                logger.info("Running Document ingestor on %s", data_dir)
-                doc_items = await DocumentIngestor(data_dir).ingest_all()
-                all_items.extend(doc_items)
-            else:
-                logger.info("No local data directory found for sync: %s", data_dir)
+            logger.info("No local data directory found for sync: %s", data_dir)
 
         staged, skipped, errors = await stage_items(all_items, dataset)
         

@@ -156,8 +156,11 @@ async def handle_delete_project(id: str, db: sqlite3.Connection) -> dict:
     except Exception as e:
         logger.error(f"Failed to delete dataset {dataset} from cognee: {e}")
 
-    cursor.execute("DELETE FROM projects WHERE id = ?", (id,))
+    cursor.execute("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE project_id = ?)", (id,))
+    cursor.execute("DELETE FROM conversations WHERE project_id = ?", (id,))
+    cursor.execute("DELETE FROM sync_jobs WHERE project_id = ?", (id,))
     cursor.execute("DELETE FROM project_sources WHERE project_id = ?", (id,))
+    cursor.execute("DELETE FROM projects WHERE id = ?", (id,))
     db.commit()
     return {"message": "Project deleted successfully"}
 

@@ -79,10 +79,11 @@ class GitHubIngestor:
         scopes.
     """
 
-    def __init__(self, owner: str, repo: str, pat: str) -> None:
+    def __init__(self, owner: str, repo: str, pat: str, since: str | None = None) -> None:
         self.owner = owner
         self.repo = repo
         self.pat = pat
+        self.since = since
         self.client = httpx.AsyncClient(
             base_url="https://api.github.com",
             headers={
@@ -327,13 +328,17 @@ class GitHubIngestor:
 
         while True:
             logger.info("[ingest_issues] Fetching page %d ...", page)
+            params={
+                "state": "all",
+                "per_page": 100,
+                "page": page,
+            }
+            if self.since:
+                params["since"] = self.since
+                
             response = await self.client.get(
                 f"/repos/{self.owner}/{self.repo}/issues",
-                params={
-                    "state": "all",
-                    "per_page": 100,
-                    "page": page,
-                },
+                params=params,
             )
             response.raise_for_status()
 
@@ -388,13 +393,17 @@ class GitHubIngestor:
 
         while True:
             logger.info("[ingest_pull_requests] Fetching page %d ...", page)
+            params={
+                "state": "all",
+                "per_page": 100,
+                "page": page,
+                "sort": "updated",
+                "direction": "desc"
+            }
+            
             response = await self.client.get(
                 f"/repos/{self.owner}/{self.repo}/pulls",
-                params={
-                    "state": "all",
-                    "per_page": 100,
-                    "page": page,
-                },
+                params=params,
             )
             response.raise_for_status()
 
@@ -402,6 +411,18 @@ class GitHubIngestor:
 
             if not prs:
                 break
+                
+            # If we are using `since`, we can stop paginating once we hit a PR older than `since`
+            if self.since:
+                oldest_in_page = prs[-1]["updated_at"]
+                if oldest_in_page < self.since:
+                    # Filter current page for PRs strictly >= since
+                    prs = [pr for pr in prs if pr["updated_at"] >= self.since]
+                    should_break = True
+                else:
+                    should_break = False
+            else:
+                should_break = False
 
             for pr in prs:
                 items.append(
@@ -424,6 +445,9 @@ class GitHubIngestor:
                 )
 
             logger.info("[ingest_pull_requests] Page %d: +%d PRs (total so far: %d)", page, len(prs), len(items))
+            if should_break:
+                logger.info("[ingest_pull_requests] Reached PRs older than 'since', stopping pagination.")
+                break
             page += 1
 
         logger.info("[ingest_pull_requests] Done. Collected %d PR items.", len(items))

@@ -1,5 +1,7 @@
 # Repollect
 
+> Built with ❤️ for the **WeMakeDevs × Cognee Hackathon** — Jun 29 – Jul 5, 2026
+
 Repollect is an AI-powered organizational memory and developer copilot. It connects GitHub, Discord, Notion, and local documents into a single, searchable knowledge graph. When your team asks a question, Repollect retrieves the exact context across all platforms to give accurate, informed answers using the latest LLM models.
 
 ## ✨ Features
@@ -196,3 +198,13 @@ Repollect is designed to evolve from a passive knowledge base into an active, in
 
 ### 3. Model Context Protocol (MCP) Server
 Expose Repollect's slash commands and search capabilities via an **MCP Server** so developers can query the project knowledge graph directly from their IDEs (Cursor, Windsurf) or desktop AI assistants (Claude Desktop).
+
+---
+
+## 💝 Acknowledgments
+
+- **[Cognee](https://cognee.ai)** — The graph-vector hybrid memory that makes Repollect's knowledge graph possible.
+- **[WeMakeDevs](https://wemakedevs.org)** — For organizing the hackathon and bringing together builders.
+- Every open source project whose public history helped shape and test this tool.
+
+> Made with love by [muskiteer](https://github.com/muskiteer) — for every developer who's ever asked "why does this code exist?"

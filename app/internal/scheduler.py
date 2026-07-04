@@ -34,9 +34,17 @@ async def poll_github_projects():
     logger.info("[Scheduler] Polling system started...")
     
     while True:
-        auto_review = os.getenv("AUTO_REVIEW", "False").lower() in ("true", "1", "yes")
+        # Re-read from env on every loop so changes take effect without restart
+        auto_review = os.getenv("AUTO_REVIEW", os.getenv("Auto_Review", "False")).lower() in ("true", "1", "yes")
+        try:
+            review_time_min = int(os.getenv("REVIEW_TIME_MIN", "30"))
+        except ValueError:
+            review_time_min = 30
+
+        wait_seconds = review_time_min * 60
+
         if not auto_review:
-            await asyncio.sleep(60)
+            await asyncio.sleep(60) # check for setting changes frequently
             continue
             
         try:
@@ -57,12 +65,22 @@ async def poll_github_projects():
             
             for p in projects:
                 since = p["last_polled_at"]
+                
+                # If this is the very first time the scheduler sees this project,
+                # we don't want to spam comments on historical issues.
+                # Just set the baseline time and skip.
+                if not since:
+                    cursor.execute("UPDATE projects SET last_polled_at = ? WHERE id = ?", (now, p["id"]))
+                    conn.commit()
+                    continue
+
                 issues = await fetch_new_issues_prs(p["repo_owner"], p["repo_name"], p["token"], since)
                 
                 for issue in issues:
-                    # Ignore issues/PRs created before `since` to avoid duplicate comments
+                    # GitHub API `?since=` filters by updated_at, not created_at.
+                    # We only want to comment on items that were CREATED after our last poll.
                     created_at = issue["created_at"]
-                    if since and created_at <= since:
+                    if created_at <= since:
                         continue
                         
                     is_pr = "pull_request" in issue
@@ -113,5 +131,5 @@ Use the following context from the project's knowledge graph to inform your resp
             if 'conn' in locals():
                 conn.close()
             
-        # Poll every 60 seconds
-        await asyncio.sleep(60)
+        # Sleep for the configured interval
+        await asyncio.sleep(wait_seconds)

@@ -202,6 +202,41 @@ export default function ChatView({ onNavigate, project }: Props) {
                 >
                   <span style={{ fontWeight: 700 }}>/Notion</span> — Create Notion Page
                 </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('iss'); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>iss#</span> — Fetch &amp; discuss an Issue
+                </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('pr'); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>pr#</span> — Fetch &amp; discuss a PR
+                </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('diff'); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>diff#</span> — Explain a PR's code diff
+                </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('/contributors'); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>/contributors</span> — List all contributors
+                </button>
+                <button 
+                  className="btn btn-white" 
+                  style={{ textAlign: 'left', padding: '8px' }}
+                  onClick={() => { setInput('@'); document.getElementById('chat-input')?.focus(); }}
+                >
+                  <span style={{ fontWeight: 700 }}>@username</span> — Profile &amp; work summary
+                </button>
               </div>
             )}
             <input

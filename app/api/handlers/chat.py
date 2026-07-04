@@ -12,6 +12,14 @@ from typing import List, Optional
 from utils.recall import recall_data
 from tool.Issues import open_github_issue
 from tool.pages import create_notion_page
+from tool.fetch_issue import fetch_github_issue
+from tool.fetch_pr import fetch_github_pr
+from tool.fetch_diff import fetch_github_diff
+from tool.fetch_contributor import (
+    fetch_all_contributors,
+    fetch_contributor_profile,
+    format_contributors_list,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +122,16 @@ async def handle_send_message(conversation_id: str, req: SendMessageRequest, db:
     # Detect tool call
     is_issue = "/issue" in req.message
     is_notion = "/Notion" in req.message
+    is_contributors = req.message.strip().lower() == "/contributors"
+
+    # Detect iss{N}, pr{N}, diff{N} patterns
+    iss_match = re.match(r'^iss(\d+)\b', req.message.strip(), re.IGNORECASE)
+    pr_match = re.match(r'^pr(\d+)\b', req.message.strip(), re.IGNORECASE)
+    diff_match = re.match(r'^diff(\d+)\b', req.message.strip(), re.IGNORECASE)
+
+    # Detect @username mention (must start with @)
+    at_match = re.match(r'^@([\w.-]+)\b', req.message.strip())
+
     query = req.message.replace("/issue", "").replace("/Notion", "").strip()
     if not query:
         query = req.message
@@ -184,6 +202,125 @@ You need to create a Notion page. Based on the user's request and the context pr
             logger.error(f"Failed to process /Notion tool: {e}", exc_info=True)
             assistant_reply = f"Sorry, I failed to create the Notion page. Error: {e}"
             
+    elif iss_match:
+        issue_num = int(iss_match.group(1))
+        follow_up = req.message[iss_match.end():].strip()
+        try:
+            issue_data = await fetch_github_issue(repo_owner, repo_name, issue_num, tokens["github"])
+            if not issue_data.get("exists", True) or issue_data.get("number") is None:
+                assistant_reply = f"Issue #{issue_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                llm_messages[0]["content"] += f"\n\nThe user is asking about this GitHub issue:\n\n{issue_data['markdown']}"
+                if follow_up:
+                    llm_messages[-1] = {"role": "user", "content": follow_up}
+                else:
+                    llm_messages[-1] = {"role": "user", "content": f"Summarize issue #{issue_num} and tell me what it's about, its current status, and any important discussion."}
+                assistant_reply = await _call_llm(llm_messages, expect_json=False)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                assistant_reply = f"Issue #{issue_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                logger.error(f"Failed to fetch issue #{issue_num}: {e}", exc_info=True)
+                assistant_reply = f"Sorry, I couldn't fetch issue #{issue_num}. Error: {e}"
+        except Exception as e:
+            logger.error(f"Failed to fetch issue #{issue_num}: {e}", exc_info=True)
+            assistant_reply = f"Sorry, I couldn't fetch issue #{issue_num}. Error: {e}"
+
+    elif pr_match:
+        pr_num = int(pr_match.group(1))
+        follow_up = req.message[pr_match.end():].strip()
+        try:
+            pr_data = await fetch_github_pr(repo_owner, repo_name, pr_num, tokens["github"])
+            if not pr_data.get("exists", True) or pr_data.get("number") is None:
+                assistant_reply = f"PR #{pr_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                llm_messages[0]["content"] += f"\n\nThe user is asking about this GitHub pull request:\n\n{pr_data['markdown']}"
+                if follow_up:
+                    llm_messages[-1] = {"role": "user", "content": follow_up}
+                else:
+                    llm_messages[-1] = {"role": "user", "content": f"Summarize PR #{pr_num}, explain what it changes, its review status, and any important feedback."}
+                assistant_reply = await _call_llm(llm_messages, expect_json=False)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                assistant_reply = f"PR #{pr_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                logger.error(f"Failed to fetch PR #{pr_num}: {e}", exc_info=True)
+                assistant_reply = f"Sorry, I couldn't fetch PR #{pr_num}. Error: {e}"
+        except Exception as e:
+            logger.error(f"Failed to fetch PR #{pr_num}: {e}", exc_info=True)
+            assistant_reply = f"Sorry, I couldn't fetch PR #{pr_num}. Error: {e}"
+
+    elif diff_match:
+        diff_num = int(diff_match.group(1))
+        follow_up = req.message[diff_match.end():].strip()
+        try:
+            diff_data = await fetch_github_diff(repo_owner, repo_name, diff_num, tokens["github"])
+            if not diff_data.get("exists", True):
+                assistant_reply = f"PR #{diff_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                llm_messages[0]["content"] += f"\n\nThe user is asking about the code diff of this GitHub pull request:\n\n{diff_data['diff_markdown']}"
+                if follow_up:
+                    llm_messages[-1] = {"role": "user", "content": follow_up}
+                else:
+                    llm_messages[-1] = {"role": "user", "content": f"Summarize the code changes in PR #{diff_num}. Explain what each file change does, the overall intent of the PR, and any potential issues you spot."}
+                assistant_reply = await _call_llm(llm_messages, expect_json=False)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                assistant_reply = f"PR #{diff_num} does not exist in {repo_owner}/{repo_name}."
+            else:
+                logger.error(f"Failed to fetch diff for PR #{diff_num}: {e}", exc_info=True)
+                assistant_reply = f"Sorry, I couldn't fetch the diff for PR #{diff_num}. Error: {e}"
+        except Exception as e:
+            logger.error(f"Failed to fetch diff for PR #{diff_num}: {e}", exc_info=True)
+            assistant_reply = f"Sorry, I couldn't fetch the diff for PR #{diff_num}. Error: {e}"
+
+    elif is_contributors:
+        # List all contributors for this repo
+        try:
+            contributors = await fetch_all_contributors(repo_owner, repo_name, tokens["github"])
+            assistant_reply = format_contributors_list(contributors, repo_owner, repo_name)
+        except Exception as e:
+            logger.error(f"Failed to fetch contributors: {e}", exc_info=True)
+            assistant_reply = f"Sorry, I couldn't fetch contributors for {repo_owner}/{repo_name}. Error: {e}"
+
+    elif at_match:
+        # @username — fetch profile and answer question or summarise
+        username = at_match.group(1)
+        follow_up = req.message[at_match.end():].strip()
+        try:
+            profile = await fetch_contributor_profile(repo_owner, repo_name, username, tokens["github"])
+            if not profile.get("exists"):
+                reason = profile.get("reason", "")
+                if reason == "user_not_found":
+                    assistant_reply = f"GitHub user @{username} does not exist."
+                else:
+                    assistant_reply = f"@{username} has no recorded activity (commits, PRs, or issues) in {repo_owner}/{repo_name}."
+            else:
+                # Recall KG context for this contributor
+                recall_query = f"contributions by {username} {follow_up}".strip()
+                try:
+                    context = await recall_data(recall_query, datasets=[dataset], top_k=5)
+                    extra_ctx = "\n".join([str(c) for c in context]) if context else ""
+                except Exception:
+                    extra_ctx = ""
+
+                system_extra = f"\n\nHere is the contributor's GitHub profile and activity in {repo_owner}/{repo_name}:\n\n{profile['markdown']}"
+                if extra_ctx:
+                    system_extra += f"\n\nAdditional context from the project knowledge graph:\n{extra_ctx}"
+                llm_messages[0]["content"] += system_extra
+
+                if follow_up:
+                    llm_messages[-1] = {"role": "user", "content": follow_up}
+                else:
+                    llm_messages[-1] = {
+                        "role": "user",
+                        "content": f"Give a detailed summary of @{username}'s contributions to {repo_owner}/{repo_name}. Cover what they've worked on, the impact of their PRs, and any notable patterns in their issues.",
+                    }
+                assistant_reply = await _call_llm(llm_messages, expect_json=False)
+        except Exception as e:
+            logger.error(f"Failed to fetch contributor @{username}: {e}", exc_info=True)
+            assistant_reply = f"Sorry, I couldn't fetch the profile for @{username}. Error: {e}"
+
     else:
         # Standard chat
         try:
@@ -191,7 +328,7 @@ You need to create a Notion page. Based on the user's request and the context pr
         except Exception as e:
             logger.error(f"Failed to call LLM: {e}", exc_info=True)
             assistant_reply = "I'm having trouble connecting to the AI model right now."
-            
+
     # Save assistant reply
     asst_id = str(uuid.uuid4())
     asst_now = datetime.now(timezone.utc).isoformat()

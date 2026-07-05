@@ -72,37 +72,3 @@ async def run_cognify(dataset: str | None = None) -> None:
             exc,
         )
         raise
-
-
-async def recall_data(query_text: str, datasets: list[str], top_k: int = 5):
-    """
-    Recall insights from cognee based on a natural language query.
-    """
-    logger.info(
-        "[recall_data] Querying cognee for %r in datasets=%r (top_k=%d)", 
-        query_text, datasets, top_k
-    )
-    try:
-        # Assuming we can pass top_k or slice the results later
-        results = await cognee.search(
-            query_type="INSIGHTS", 
-            query_text=query_text, 
-            datasets=datasets
-        )
-        return results[:top_k] if isinstance(results, list) else results
-    except Exception as exc:
-        logger.error("[recall_data] cognee.search() failed - %s: %s", type(exc).__name__, exc)
-        raise
-
-
-async def delete_dataset(dataset: str) -> None:
-    """
-    Delete an entire dataset from cognee.
-    """
-    logger.info("[delete_dataset] Forgetting dataset=%r", dataset)
-    try:
-        await cognee.forget(dataset=dataset)
-        logger.info("[delete_dataset] Successfully deleted dataset=%r", dataset)
-    except Exception as exc:
-        logger.error("[delete_dataset] cognee.forget() failed for dataset=%r - %s: %s", dataset, type(exc).__name__, exc)
-        raise

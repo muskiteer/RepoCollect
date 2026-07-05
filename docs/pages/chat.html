@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat &amp; Tools — Repollect</title>
+  <meta name="description" content="Repollect chat commands and action tools reference.">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <span class="nav-logo-mark">R</span>
+        Repollect
+      </a>
+      <button class="nav-mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="features.html" class="nav-link">Features</a></li>
+        <li><a href="architecture.html" class="nav-link">Architecture</a></li>
+        <li><a href="setup.html" class="nav-link">Setup</a></li>
+        <li><a href="sources.html" class="nav-link">Sources</a></li>
+        <li><a href="api.html" class="nav-link">API</a></li>
+        <li><a href="chat.html" class="nav-link active">Chat</a></li>
+        <li><a href="roadmap.html" class="nav-link">Roadmap</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <h1 class="page-hero-title">Chat &amp; Tools</h1>
+      <p class="page-hero-sub">Interact with the knowledge graph through natural language and specialized commands.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-inner">
+      <div class="content">
+
+        <h2>Slash Commands</h2>
+        <p>The chat interface supports a range of specialized slash commands that trigger real-time API calls and knowledge graph queries.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Command</th><th>Description</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>/issue</td><td>Create a new GitHub Issue directly from chat</td><td><code class="inline-code">/issue Login button broken on mobile</code></td></tr>
+              <tr><td>/Notion</td><td>Create a new Notion page</td><td><code class="inline-code">/Notion Meeting notes July 4</code></td></tr>
+              <tr><td>iss{N}</td><td>Fetch and discuss a specific GitHub Issue</td><td><code class="inline-code">iss54 why was this closed?</code></td></tr>
+              <tr><td>pr{N}</td><td>Fetch and discuss a Pull Request</td><td><code class="inline-code">pr128 what changed here?</code></td></tr>
+              <tr><td>diff{N}</td><td>AI explanation of a PR's code changes</td><td><code class="inline-code">diff128</code></td></tr>
+              <tr><td>/contributors</td><td>List all contributors with commit counts</td><td><code class="inline-code">/contributors</code></td></tr>
+              <tr><td>@username</td><td>Get contributor profile and activity summary</td><td><code class="inline-code">@muskiteer what have they worked on?</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>How Chat Works</h2>
+        <p>When a user submits a query, the backend:</p>
+        <ol>
+          <li>Performs a semantic search across the Knowledge Graph via <code class="inline-code">cognee.search()</code></li>
+          <li>For specialized slash commands (like <code class="inline-code">pr12</code>), performs a real-time fetch to the GitHub API for live data</li>
+          <li>Injects both the graph context and live data into the LLM prompt</li>
+          <li>Returns a grounded response with sources linked</li>
+        </ol>
+
+        <div class="callout callout-info">
+          <strong>Example:</strong> Asking "Why does this project use X instead of Y?" will traverse the graph back to a 3-year-old decision thread, linking code &rarr; PR &rarr; discussion &rarr; person &rarr; decision. That chain is what no plain RAG system can do.
+        </div>
+
+        <h2>Action Tools</h2>
+        <p>Beyond passive chat, Repollect is designed to evolve into an active contributor. Each action tool follows the same pattern: trigger &rarr; recall context from graph &rarr; LLM decides action &rarr; executes via API &rarr; reports result.</p>
+
+        <h3>GitHub Actions</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Tool</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>PR Review Assistant</td><td>Auto-review PRs using project history context. Finds related issues, past decisions, and flagged regressions.</td></tr>
+              <tr><td>Issue Triage &amp; Labeling</td><td>Deduplicate new issues, suggest labels, assign maintainers based on historical expertise.</td></tr>
+              <tr><td>Context-Aware Reply</td><td>Suggest draft replies grounded in project history.</td></tr>
+              <tr><td>Knowledge Gap Detection</td><td>If no graph match for a question, auto-open a GitHub Discussion.</td></tr>
+              <tr><td>Auto-PR for Known Fixes</td><td>Match new issues to historical fix patterns, generate draft PRs.</td></tr>
+              <tr><td>Project Health Dashboard</td><td>Analyze decision debt, stale PRs, expert locator, knowledge density.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Discord Actions</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Tool</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FAQ Auto-Responder</td><td>Monitor Discord channels, query graph for answers, post contextual replies.</td></tr>
+              <tr><td>Thread Summarizer</td><td>Summarize long Discord threads and archive into the knowledge graph.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <a href="../index.html" class="nav-logo" style="color: var(--text-light);">
+          <span class="nav-logo-mark">R</span>
+          Repollect
+        </a>
+        <p class="footer-brand-desc">
+          AI-powered organizational memory and developer copilot. Built for the 
+          WeMakeDevs &times; Cognee Hackathon.
+        </p>
+      </div>
+      <div>
+        <div class="footer-column-title">Docs</div>
+        <ul class="footer-links">
+          <li><a href="features.html">Features</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="setup.html">Setup Guide</a></li>
+          <li><a href="sources.html">Sources</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Reference</div>
+        <ul class="footer-links">
+          <li><a href="api.html">API Reference</a></li>
+          <li><a href="chat.html">Chat &amp; Tools</a></li>
+          <li><a href="roadmap.html">Roadmap</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Ecosystem</div>
+        <ul class="footer-links">
+          <li><a href="https://cognee.ai" target="_blank">Cognee</a></li>
+          <li><a href="https://docs.cognee.ai" target="_blank">Cognee Docs</a></li>
+          <li><a href="https://wemakedevs.org" target="_blank">WeMakeDevs</a></li>
+          <li><a href="https://github.com/muskiteer/cognee" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Made with love by <a href="https://github.com/muskiteer" style="color: var(--accent-yellow); text-decoration: none;">muskiteer</a></span>
+      <span>&copy; 2026 Repollect &mdash; WeMakeDevs &times; Cognee Hackathon</span>
+    </div>
+  </footer>
+
+  <script src="../script.js"></script>
+</body>
+</html>

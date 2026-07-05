@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repollect — AI-Powered Organizational Memory</title>
+  <meta name="description"
+    content="Repollect ingests GitHub, Discord, Notion, and documents into a searchable knowledge graph. Ask questions, get answers grounded in real project history.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- ─── Nav ─── -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <span class="nav-logo-mark">R</span>
+        Repollect
+      </a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+      <button class="nav-mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="pages/features.html" class="nav-link">Features</a></li>
+        <li><a href="pages/architecture.html" class="nav-link">Architecture</a></li>
+        <li><a href="pages/setup.html" class="nav-link">Setup</a></li>
+        <li><a href="pages/sources.html" class="nav-link">Sources</a></li>
+        <li><a href="pages/api.html" class="nav-link">API</a></li>
+        <li><a href="pages/chat.html" class="nav-link">Chat</a></li>
+        <li><a href="pages/roadmap.html" class="nav-link">Roadmap</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ─── Hero ─── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        <span>&#9679;</span>
+        Built for WeMakeDevs &times; Cognee Hackathon
+      </div>
+      <h1 class="hero-title">
+        Your project has<br><span>a memory now.</span>
+      </h1>
+      <p class="hero-sub">
+        Repollect ingests your project's entire history &mdash; GitHub issues, PRs,
+        Discord threads, Notion docs &mdash; into a hybrid knowledge graph.
+        Ask questions and get answers grounded in real context, not hallucinations.
+      </p>
+      <div class="hero-ctas">
+        <a href="pages/setup.html" class="btn btn-primary btn-lg">Get Started</a>
+        <a href="pages/architecture.html" class="btn btn-secondary btn-lg">How It Works</a>
+        <a href="https://github.com/muskiteer/cognee" class="btn btn-secondary btn-lg" target="_blank">GitHub &rarr;</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-value">3</div>
+          <div class="hero-stat-label">Data Sources</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">2</div>
+          <div class="hero-stat-label">Ingestion Phases</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">1</div>
+          <div class="hero-stat-label">Knowledge Graph</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">N</div>
+          <div class="hero-stat-label">Slash Commands</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── What & Why Cognee ─── -->
+  <section class="section" id="what-is-this">
+    <div class="section-inner content">
+      <div class="section-header">
+        <div class="section-eyebrow">Overview</div>
+        <h2 class="section-title">What is Repollect?</h2>
+      </div>
+      <p>
+        <strong>Repollect</strong> (powered by Cognee) is an onboarding knowledge layer for open-source projects and new
+        hires.
+        It solves the "Where's my context?" problem by ingesting your scattered project history—GitHub issues, Pull
+        Requests,
+        Discord threads, and Notion documents—into a unified, queryable store.
+      </p>
+
+      <h3 style="margin-top: 48px;">Why Cognee?</h3>
+      <p>
+        Standard Retrieval-Augmented Generation (RAG) relies on vector databases alone. But codebases and team
+        communications are inherently relational.
+        <strong>Cognee</strong> provides a hybrid Graph-Vector architecture.
+      </p>
+      <p>
+        By using Cognee, Repollect doesn't just find text that looks similar. It understands that <em>"PR #482 fixed a
+          bug in the auth-service, which was discussed by Alice in #incident-channel, and decided upon in a Notion
+          meeting."</em>
+        Cognee's dual-layered approach (graph + vector) allows us to trace these relationships flawlessly and inject
+        perfect context into the LLM prompt.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── How It Works ─── -->
+  <section class="section" style="background: var(--bg-surface);">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-eyebrow">Pipeline</div>
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-sub">From scattered data to connected knowledge in three steps.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Connect Sources</h3>
+          <p class="step-desc">Add API tokens for GitHub, Discord, or Notion. Point Repollect at your project's public
+            history.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Cognify</h3>
+          <p class="step-desc">Data is deduplicated, staged into Cognee, and processed into a rich knowledge graph with
+            entities and relationships.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Ask Questions</h3>
+          <p class="step-desc">Chat with an LLM that has full project context. Use slash commands to create issues,
+            fetch PRs, and more.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Features Preview ─── -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-eyebrow">Capabilities</div>
+        <h2 class="section-title">Core Features</h2>
+        <p class="section-sub">Everything you need to capture and query your project's collective knowledge.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-icon yellow">&#9881;</div>
+          <h3 class="feature-card-title">Multi-Source Ingestion</h3>
+          <p class="feature-card-desc">Ingest from GitHub (issues, PRs, discussions, releases), Discord (channels,
+            threads, messages), Notion (pages, databases, blocks), and local files.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon indigo">&#8635;</div>
+          <h3 class="feature-card-title">Incremental Sync</h3>
+          <p class="feature-card-desc">Only pulls new or updated data since your last sync. Lightning-fast background
+            jobs keep the graph fresh without re-processing everything.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon green">&#9788;</div>
+          <h3 class="feature-card-title">Auto-Review Scheduler</h3>
+          <p class="feature-card-desc">Background worker continuously polls GitHub for new issues and PRs, fetches
+            historical context from the graph, and posts AI-generated reviews.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon pink">&#9998;</div>
+          <h3 class="feature-card-title">Smart Chat Interface</h3>
+          <p class="feature-card-desc">Context-aware chat with specialized slash commands: create issues, fetch PRs,
+            explain diffs, list contributors, and query the knowledge graph.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon orange">&#9634;</div>
+          <h3 class="feature-card-title">Two-Phase Ingestion</h3>
+          <p class="feature-card-desc">Phase 1 fetches and stages data (no LLM cost). Phase 2 runs a single <code
+              class="inline-code">cognify()</code> pass for embeddings and graph building.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-icon purple">&#9670;</div>
+          <h3 class="feature-card-title">Deduplication</h3>
+          <p class="feature-card-desc">SHA-256 content hashing ensures no duplicate entries. Same content from different
+            sources is stored once with cross-references.</p>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 40px;">
+        <a href="pages/features.html" class="btn btn-outline">View All Features &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Architecture Preview ─── -->
+  <section class="section" style="background: var(--bg-surface);">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-eyebrow">Design</div>
+        <h2 class="section-title">Three-Layer Architecture</h2>
+        <p class="section-sub">GraphRAG architecture built on Cognee's hybrid graph-vector knowledge store.</p>
+      </div>
+      <div class="arch-diagram">
+        <div class="arch-layer ingestion">
+          <div class="arch-layer-label">&#9660; Ingestion Layer</div>
+          <h3 class="arch-layer-title">Data Collection</h3>
+          <div class="arch-layer-items">
+            <div class="arch-item">GitHub API</div>
+            <div class="arch-item">Discord API</div>
+            <div class="arch-item">Notion API</div>
+            <div class="arch-item">Local Files</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660;</div>
+        <div class="arch-layer cognee">
+          <div class="arch-layer-label">&#9632; Cognee Core Layer</div>
+          <h3 class="arch-layer-title">Knowledge Graph Construction</h3>
+          <div class="arch-layer-items">
+            <div class="arch-item">Deduplication</div>
+            <div class="arch-item">Embeddings</div>
+            <div class="arch-item">Graph Nodes</div>
+            <div class="arch-item">Relationships</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660;</div>
+        <div class="arch-layer query">
+          <div class="arch-layer-label">&#9651; Query Layer</div>
+          <h3 class="arch-layer-title">Access &amp; Retrieval</h3>
+          <div class="arch-layer-items">
+            <div class="arch-item">REST API</div>
+            <div class="arch-item">Web UI</div>
+            <div class="arch-item">Semantic Search</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center;">
+        <a href="pages/architecture.html" class="btn btn-outline">Explore Architecture &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Quick Start ─── -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-eyebrow">Quick Start</div>
+        <h2 class="section-title">Get Up and Running</h2>
+        <p class="section-sub">Follow these steps to spin up Repollect locally in under 5 minutes.</p>
+      </div>
+
+      <div class="setup-terminal">
+        <div class="setup-terminal-header">
+          <div class="setup-terminal-dot"></div>
+          <div class="setup-terminal-dot"></div>
+          <div class="setup-terminal-dot"></div>
+        </div>
+        <div class="setup-terminal-body">
+          <span class="comment"># 1. Clone the repository</span><br>
+          <span class="cmd">git clone</span> https://github.com/muskiteer/cognee.git<br>
+          <span class="cmd">cd</span> cognee<br><br>
+
+          <span class="comment"># 2. Setup the FastAPI Backend</span><br>
+          <span class="cmd">cd</span> app<br>
+          <span class="cmd">python3</span> -m venv venv<br>
+          <span class="cmd">source</span> venv/bin/activate<br>
+          <span class="cmd">pip</span> install -r requirements.txt<br><br>
+
+          <span class="comment"># 3. Create your .env file</span><br>
+          <span class="cmd">cp</span> .env.example .env <span class="comment"># Then add your API keys</span><br><br>
+
+          <span class="comment"># 4. Start the backend</span><br>
+          <span class="cmd">uvicorn</span> main:app --host 0.0.0.0 --port 8000 --reload<br><br>
+
+          <span class="comment"># 5. In a new terminal, start the React UI</span><br>
+          <span class="cmd">cd</span> ../ui<br>
+          <span class="cmd">npm</span> install<br>
+          <span class="cmd">npm</span> run dev<br>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ─── -->
+  <section class="section" style="background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.05);">
+    <div class="section-inner" style="text-align: center;">
+      <h2
+        style="font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -0.02em; color: var(--text-light); margin-bottom: 16px;">
+        Ready to give your project<br><span style="color: var(--accent-yellow);">a memory?</span>
+      </h2>
+      <p style="font-size: 16px; color: var(--text-tertiary); max-width: 500px; margin: 0 auto 32px; line-height: 1.7;">
+        Set up Repollect in minutes. Connect your sources, cognify your history, and start asking questions.
+      </p>
+      <a href="pages/setup.html" class="btn btn-primary btn-lg">View Full Setup Guide</a>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <a href="index.html" class="nav-logo" style="color: var(--text-light);">
+          <span class="nav-logo-mark">R</span>
+          Repollect
+        </a>
+        <p class="footer-brand-desc">
+          AI-powered organizational memory and developer copilot. Built for the
+          WeMakeDevs &times; Cognee Hackathon.
+        </p>
+      </div>
+      <div>
+        <div class="footer-column-title">Docs</div>
+        <ul class="footer-links">
+          <li><a href="pages/features.html">Features</a></li>
+          <li><a href="pages/architecture.html">Architecture</a></li>
+          <li><a href="pages/setup.html">Setup Guide</a></li>
+          <li><a href="pages/sources.html">Sources</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Reference</div>
+        <ul class="footer-links">
+          <li><a href="pages/api.html">API Reference</a></li>
+          <li><a href="pages/chat.html">Chat &amp; Tools</a></li>
+          <li><a href="pages/roadmap.html">Roadmap</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Ecosystem</div>
+        <ul class="footer-links">
+          <li><a href="https://cognee.ai" target="_blank">Cognee</a></li>
+          <li><a href="https://docs.cognee.ai" target="_blank">Cognee Docs</a></li>
+          <li><a href="https://wemakedevs.org" target="_blank">WeMakeDevs</a></li>
+          <li><a href="https://github.com/muskiteer/cognee" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Made with love by <a href="https://github.com/muskiteer"
+          style="color: var(--accent-yellow); text-decoration: none;">muskiteer</a></span>
+      <span>&copy; 2026 Repollect &mdash; WeMakeDevs &times; Cognee Hackathon</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

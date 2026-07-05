@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — Repollect</title>
+  <meta name="description" content="Repollect's three-layer GraphRAG architecture: Ingestion, Cognee Core, and Query layers.">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <span class="nav-logo-mark">R</span>
+        Repollect
+      </a>
+      <button class="nav-mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html" class="nav-link">Home</a></li>
+        <li><a href="features.html" class="nav-link">Features</a></li>
+        <li><a href="architecture.html" class="nav-link active">Architecture</a></li>
+        <li><a href="setup.html" class="nav-link">Setup</a></li>
+        <li><a href="sources.html" class="nav-link">Sources</a></li>
+        <li><a href="api.html" class="nav-link">API</a></li>
+        <li><a href="chat.html" class="nav-link">Chat</a></li>
+        <li><a href="roadmap.html" class="nav-link">Roadmap</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <h1 class="page-hero-title">Architecture</h1>
+      <p class="page-hero-sub">A three-layer GraphRAG architecture built on Cognee's hybrid graph-vector knowledge store.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-inner">
+      <div class="content">
+
+        <h2>Problem</h2>
+        <p>When you join an open source project or start at a new company, the hardest knowledge to find is the context that was never written down properly: <strong>architectural decisions, rejected approaches, and historical discussions</strong>. This context is buried across thousands of scattered GitHub issues, PRs, Discord threads, changelogs, and meeting notes.</p>
+
+        <h2>Solution</h2>
+        <p>Repollect ingests a project's entire public history into a <strong>hybrid graph-vector knowledge store</strong> (powered by <a href="https://cognee.ai" target="_blank">Cognee</a>), then makes that knowledge queryable via a REST API and Web UI. New contributors ask questions in plain English and get answers grounded in actual project history &mdash; not hallucinations.</p>
+
+        <h2>Three-Layer Architecture</h2>
+        <p>Repollect is organized into three distinct layers, each with a specific responsibility:</p>
+
+        <div class="arch-diagram" style="margin: 32px 0;">
+          <div class="arch-layer ingestion">
+            <div class="arch-layer-label">&#9660; Ingestion Layer</div>
+            <h3 class="arch-layer-title">Data Collection &amp; Staging</h3>
+            <div class="arch-layer-items">
+              <div class="arch-item">GitHub API</div>
+              <div class="arch-item">Discord API</div>
+              <div class="arch-item">Notion API</div>
+              <div class="arch-item">Local Files</div>
+              <div class="arch-item">Deduplication</div>
+              <div class="arch-item">cognee.add()</div>
+            </div>
+          </div>
+          <div class="arch-arrow">&#9660;</div>
+          <div class="arch-layer cognee">
+            <div class="arch-layer-label">&#9632; Cognee Core Layer</div>
+            <h3 class="arch-layer-title">Knowledge Graph Construction</h3>
+            <div class="arch-layer-items">
+              <div class="arch-item">Embeddings</div>
+              <div class="arch-item">Graph Nodes</div>
+              <div class="arch-item">Entity Extraction</div>
+              <div class="arch-item">Relation Mapping</div>
+              <div class="arch-item">Vector Store</div>
+              <div class="arch-item">cognee.cognify()</div>
+            </div>
+          </div>
+          <div class="arch-arrow">&#9660;</div>
+          <div class="arch-layer query">
+            <div class="arch-layer-label">&#9651; Query Layer</div>
+            <h3 class="arch-layer-title">Access &amp; Retrieval</h3>
+            <div class="arch-layer-items">
+              <div class="arch-item">REST API</div>
+              <div class="arch-item">Web UI</div>
+              <div class="arch-item">Semantic Search</div>
+              <div class="arch-item">Graph Traversal</div>
+              <div class="arch-item">LLM Response</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>1. Ingestion Layer</h3>
+        <p>Each source (GitHub, Discord, Notion, Files) has a dedicated ingestor class that fetches data via HTTP APIs and converts it into <code class="inline-code">DataItem</code> objects. All sources are fetched concurrently using <code class="inline-code">asyncio.gather()</code>.</p>
+        <p>Items are deduplicated by SHA-256 content hash and staged into Cognee's buffer via <code class="inline-code">cognee.add()</code>. No LLM or embedding work happens during this phase &mdash; it's purely data collection and staging.</p>
+
+        <h3>2. Cognee Core Layer</h3>
+        <p>A single <code class="inline-code">cognee.cognify()</code> call processes all buffered data:</p>
+        <ul>
+          <li>Generates embeddings for semantic search</li>
+          <li>Extracts entities (files, PRs, people, decisions, bugs)</li>
+          <li>Maps relationships between entities</li>
+          <li>Builds a hybrid graph-vector index for querying</li>
+        </ul>
+
+        <h3>3. Query Layer</h3>
+        <p>Users interact with the knowledge graph through multiple interfaces:</p>
+        <ul>
+          <li><strong>REST API</strong> &mdash; FastAPI endpoints for programmatic access</li>
+          <li><strong>Web UI</strong> &mdash; Vite + React chat interface with slash commands</li>
+        </ul>
+        <p>Queries use <code class="inline-code">cognee.search()</code> for semantic similarity combined with graph traversal to find connected entities.</p>
+
+        <h2>Cognee API Usage</h2>
+        <p>Repollect wraps Cognee's core APIs in utility modules at <code class="inline-code">app/utils/remember.py</code>:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Cognee API</th>
+              <th>Where Used</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>add()</td>
+              <td>Ingestion pipeline</td>
+              <td>Stage content into buffer (no LLM cost)</td>
+            </tr>
+            <tr>
+              <td>cognify()</td>
+              <td>Ingestion pipeline</td>
+              <td>Process buffer into embeddings + graph</td>
+            </tr>
+            <tr>
+              <td>search()</td>
+              <td>Chat &amp; API queries</td>
+              <td>Semantic search + graph traversal</td>
+            </tr>
+            <tr>
+              <td>forget()</td>
+              <td>Project deletion</td>
+              <td>Prune datasets from the graph</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Data Flow</h2>
+        <p>Here's what happens when a user triggers ingestion for a project:</p>
+        <ol>
+          <li><strong>Fetch:</strong> All sources are queried concurrently using <code class="inline-code">asyncio.gather()</code>. Each ingestor produces a list of <code class="inline-code">DataItem</code> objects.</li>
+          <li><strong>Deduplicate:</strong> Items are hashed (SHA-256). New items pass through; duplicates are counted and skipped.</li>
+          <li><strong>Stage:</strong> Unique items are buffered via <code class="inline-code">cognee.add()</code>.</li>
+          <li><strong>Cognify:</strong> A single <code class="inline-code">cognee.cognify()</code> call processes the entire buffer.</li>
+          <li><strong>Query:</strong> Users can now search the graph via the API or chat interface.</li>
+        </ol>
+
+        <div class="callout callout-info">
+          <strong>Two-Phase Design:</strong> Separating fetch from processing means LLM costs are incurred exactly once per batch, and individual source failures don't block others.
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <a href="../index.html" class="nav-logo" style="color: var(--text-light);">
+          <span class="nav-logo-mark">R</span>
+          Repollect
+        </a>
+        <p class="footer-brand-desc">
+          AI-powered organizational memory and developer copilot. Built for the 
+          WeMakeDevs &times; Cognee Hackathon.
+        </p>
+      </div>
+      <div>
+        <div class="footer-column-title">Docs</div>
+        <ul class="footer-links">
+          <li><a href="features.html">Features</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="setup.html">Setup Guide</a></li>
+          <li><a href="sources.html">Sources</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Reference</div>
+        <ul class="footer-links">
+          <li><a href="api.html">API Reference</a></li>
+          <li><a href="chat.html">Chat &amp; Tools</a></li>
+          <li><a href="roadmap.html">Roadmap</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-column-title">Ecosystem</div>
+        <ul class="footer-links">
+          <li><a href="https://cognee.ai" target="_blank">Cognee</a></li>
+          <li><a href="https://docs.cognee.ai" target="_blank">Cognee Docs</a></li>
+          <li><a href="https://wemakedevs.org" target="_blank">WeMakeDevs</a></li>
+          <li><a href="https://github.com/muskiteer/cognee" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Made with love by <a href="https://github.com/muskiteer" style="color: var(--accent-yellow); text-decoration: none;">muskiteer</a></span>
+      <span>&copy; 2026 Repollect &mdash; WeMakeDevs &times; Cognee Hackathon</span>
+    </div>
+  </footer>
+
+  <script src="../script.js"></script>
+</body>
+</html>

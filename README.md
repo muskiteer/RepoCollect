@@ -2,8 +2,8 @@
 
 > Built with ❤️ for the **WeMakeDevs × Cognee Hackathon** — Jun 29 – Jul 5, 2026
 
-**🎥 [Watch the Live Demo Video Here](#)**  
-*(Replace `#` with your YouTube or Loom link before submission)*
+**🎥 [Watch the Live Demo Video Here](https://youtu.be/3yJ2FeSPJ2I)**  
+
 
 ## 📑 Table of Contents
 1. [The Problem](#-the-problem)
@@ -17,7 +17,7 @@
 9. [Contributing & License](#-contributing)
 
 ---
-RepoCollect
+
 ## 🚨 The Problem
 
 When a new hire joins an open-source project or engineering team, they are immediately hit with the "Where's my context?" problem. Codebases are massive, decisions are scattered across closed GitHub issues, old Discord threads, and buried Notion documents. Traditional onboarding involves weeks of tapping senior engineers on the shoulder just to figure out *why* a piece of code exists.

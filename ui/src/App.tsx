@@ -90,7 +90,7 @@ function App() {
         {/* ── Sidebar ── */}
         <aside className="sidebar">
           <div className="sidebar-logo">
-            <span className="sidebar-wordmark">Repollect</span>
+            <span className="sidebar-wordmark">RepoCollect</span>
             <span className="sidebar-tagline">Knowledge Ingestion Tool</span>
           </div>
 

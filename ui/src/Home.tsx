@@ -70,7 +70,7 @@ export default function Home({ onNavigate, projects }: Props) {
           Your project has<br /><span>a memory now.</span>
         </h1>
         <p className="hero-sub">
-          Issues, PRs, Discord threads, Notion docs. Repollect builds a
+          Issues, PRs, Discord threads, Notion docs. RepoCollect builds a
           knowledge graph from your project's entire history — so you can
           ask questions and get answers grounded in real context.
         </p>
@@ -136,7 +136,7 @@ export default function Home({ onNavigate, projects }: Props) {
         <div className="steps-row">
           {[
             { num: '01', label: 'Connect Sources',  desc: 'Add a GitHub repo, Discord server, or Notion workspace.' },
-            { num: '02', label: 'Cognify',           desc: 'Repollect ingests history into a rich knowledge graph.' },
+            { num: '02', label: 'Cognify',           desc: 'RepoCollect ingests history into a rich knowledge graph.' },
             { num: '03', label: 'Ask Questions',     desc: 'Chat with an LLM that has full project context.' },
           ].map(s => (
             <div key={s.num} className="step-cell">

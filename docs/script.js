@@ -1,43 +1,53 @@
-// ─── Mobile nav toggle ───
 document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('mobile-toggle')
-  const links = document.getElementById('nav-links')
-  if (toggle && links) {
-    toggle.addEventListener('click', () => {
-      links.classList.toggle('open')
+
+  // ── Theme toggle ──
+  const themeBtn = document.getElementById('theme-toggle')
+  const body = document.body
+  const saved = localStorage.getItem('theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  if (saved === 'dark' || (!saved && prefersDark)) body.classList.add('dark')
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      body.classList.toggle('dark')
+      localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light')
     })
   }
 
-  // Highlight active nav link
-  const path = window.location.pathname.split('/').pop() || 'index.html'
-  document.querySelectorAll('.nav-link').forEach(link => {
-    const href = link.getAttribute('href')
-    if (href === path || (path === '' && href === 'index.html')) {
-      link.classList.add('active')
+  // ── Sticky nav scroll shrink ──
+  const nav = document.getElementById('nav')
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 60) {
+      nav.style.borderBottomColor = 'var(--border)'
+    } else {
+      nav.style.borderBottomColor = 'transparent'
     }
-  })
+  }, { passive: true })
 
-  // Close mobile nav on link click
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      links.classList.remove('open')
-    })
-  })
+  // ── Active nav link on scroll ──
+  const sections = document.querySelectorAll('section[id], footer[id]')
+  const navLinks = document.querySelectorAll('.nav-link')
 
-  // Endpoint accordion
-  document.querySelectorAll('.endpoint-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const body = header.nextElementSibling
-      if (body) {
-        body.classList.toggle('open')
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active')
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active')
+          }
+        })
       }
     })
-  })
+  }, { rootMargin: '-40% 0px -55% 0px' })
 
-  // Smooth scroll for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', (e) => {
-      const target = document.querySelector(anchor.getAttribute('href'))
+  sections.forEach(s => observer.observe(s))
+
+  // ── Smooth anchor scroll ──
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'))
       if (target) {
         e.preventDefault()
         target.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -45,21 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   })
 
-  // Theme toggle
-  const themeBtn = document.getElementById('theme-toggle')
-  if (themeBtn) {
-    // Check saved preference or system preference
-    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.body.classList.add('dark-mode')
-    }
-
-    themeBtn.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode')
-      if (document.body.classList.contains('dark-mode')) {
-        localStorage.setItem('theme', 'dark')
-      } else {
-        localStorage.setItem('theme', 'light')
+  // ── Fade-in on scroll ──
+  const fadeEls = document.querySelectorAll('.cmd-card, .stack-item, .arch-source-chip, .problem-node')
+  const fadeObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1'
+        entry.target.style.transform = 'translateY(0)'
+        fadeObs.unobserve(entry.target)
       }
     })
-  }
+  }, { threshold: 0.1 })
+
+  fadeEls.forEach(el => {
+    el.style.opacity = '0'
+    el.style.transform = 'translateY(16px)'
+    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease'
+    fadeObs.observe(el)
+  })
+
 })

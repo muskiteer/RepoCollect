@@ -147,7 +147,7 @@ export default function AddProject({ onNavigate }: Props) {
             </h1>
             <p style={{ fontSize: '14px', color: '#666', maxWidth: '460px', lineHeight: 1.6 }}>
               Connect a GitHub repo, Discord server, or Notion workspace.
-              Repollect will ingest all history into a searchable knowledge graph.
+              RepoCollect will ingest all history into a searchable knowledge graph.
             </p>
           </div>
         </div>

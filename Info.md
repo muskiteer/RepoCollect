@@ -1,4 +1,4 @@
-# 🧠 Repollect / Cognee — Onboarding Knowledge Layer
+# 🧠 RepoCollect / Cognee — Onboarding Knowledge Layer
 
 > Built for the **WeMakeDevs × Cognee Hackathon** — "The Hangover Part AI: Where's My Context?"  
 > Jun 29 – Jul 5, 2026
@@ -7,7 +7,7 @@
 
 ## 📋 Overview
 
-**Repollect** (branded internally as **Open Memory**) is an onboarding knowledge layer for open-source projects and new hires. It ingests a project's scattered history — GitHub issues, PRs, Discord threads, Notion docs — into a **hybrid graph-vector knowledge store** (powered by Cognee), then makes that knowledge queryable via:
+**RepoCollect** (branded internally as **Open Memory**) is an onboarding knowledge layer for open-source projects and new hires. It ingests a project's scattered history — GitHub issues, PRs, Discord threads, Notion docs — into a **hybrid graph-vector knowledge store** (powered by Cognee), then makes that knowledge queryable via:
 
 - A **REST API** (FastAPI) — for custom integrations and the web UI
 - An **MCP Server** — so Claude Desktop, Claude Code, Cursor, and Windsurf can ask questions
@@ -81,7 +81,7 @@ This separation means fetching is fast and LLM costs are incurred exactly once p
 cognee/
 ├── Info.md                       # this file
 ├── README.md                     # setup instructions (Discord bot setup)
-├── Repollect-architecture.md     # detailed architecture document
+├── RepoCollect-architecture.md     # detailed architecture document
 ├── ingest.md                     # planned ingestion sources list
 ├── requirements.txt              # Python dependencies
 ├── docker-compose.yml            # (placeholder — empty)

@@ -1,51 +1,81 @@
-# Repollect
+# RepoCollect
 
 > Built with ❤️ for the **WeMakeDevs × Cognee Hackathon** — Jun 29 – Jul 5, 2026
 
-Repollect is an AI-powered organizational memory and developer copilot. It connects GitHub, Discord, Notion, and local documents into a single, searchable knowledge graph. When your team asks a question, Repollect retrieves the exact context across all platforms to give accurate, informed answers using the latest LLM models.
+**🎥 [Watch the Live Demo Video Here](#)**  
+*(Replace `#` with your YouTube or Loom link before submission)*
 
-## ✨ Features
+## 📑 Table of Contents
+1. [The Problem](#-the-problem)
+2. [How We Used Cognee](#-how-we-used-cognee)
+3. [Capabilities](#-capabilities)
+4. [Architecture](#-architecture)
+5. [Repository Structure](#-repository-structure)
+6. [Getting Started](#-getting-started)
+7. [API Keys](#-how-to-get-api-keys)
+8. [Roadmap](#-future-upgrades--roadmap)
+9. [Contributing & License](#-contributing)
 
-* **Multi-Source Knowledge Graph:** Ingests GitHub (Issues, PRs), Discord (server messages), Notion (pages), and local documents (PDF, MD, TXT).
-* **Incremental Synchronization:** Lightning-fast syncs that only pull new data since your last ingestion.
-* **Auto-Review Scheduler:** A background worker that automatically reviews and comments on new GitHub Issues and Pull Requests.
-* **Smart Chat Interface:** Talk to your knowledge graph with specialized slash commands:
-  * `/issue` — Create a new GitHub Issue directly from chat
-  * `/Notion` — Create a new Notion Page
-  * `iss{N}` — Fetch and discuss a specific Issue (e.g., `iss54 why was this closed?`)
-  * `pr{N}` — Fetch and discuss a Pull Request
-  * `diff{N}` — AI-powered explanation of a PR's code changes
-  * `/contributors` — List all contributors and their commit counts
-  * `@username` — Get a summary of a specific user's contributions and activity
+---
+RepoCollect
+## 🚨 The Problem
+
+When a new hire joins an open-source project or engineering team, they are immediately hit with the "Where's my context?" problem. Codebases are massive, decisions are scattered across closed GitHub issues, old Discord threads, and buried Notion documents. Traditional onboarding involves weeks of tapping senior engineers on the shoulder just to figure out *why* a piece of code exists.
+
+RepoCollect solves this by ingesting a project's entire scattered history into a unified organizational memory. It acts as an AI copilot that instantly retrieves the exact context across all platforms to give accurate, informed answers to any new contributor.
 
 ---
 
-## 🛠️ Tech Stack
+## 🧠 How We Used Cognee
 
-**Frontend:**
-* React + TypeScript
-* Vite (Build Tool)
-* React Router (Navigation)
+Because codebases and team communications are inherently relational, standard vector-only Retrieval-Augmented Generation (RAG) fails to connect the dots. 
 
-**Backend:**
-* Python + FastAPI
-* SQLite (Metadata & Chat History)
-* Cognee (Knowledge Graph Construction & GraphRAG)
-* Groq API (High-speed LLM Inference)
-* FastEmbed (Local Sentence-Transformer Embeddings)
+We built RepoCollect on **Cognee's hybrid graph-vector store**. When we ingest data, Cognee doesn't just create vector embeddings; it builds a knowledge graph where every issue, pull request, Discord message, and Notion page is a node. This allows RepoCollect to understand that *"PR #482 fixed a bug in the auth-service, which was discussed by Alice in #incident-channel, and decided upon in a Notion meeting."* By tracing these edges, we inject perfect, hallucination-free context into the LLM prompt.
+
+---
+
+<!-- 📸 Add your Main Page / Dashboard screenshot below -->
+![RepoCollect Main Page](assets/home.png)
+
+## ✨ Capabilities
+
+### Two-Phase Ingestion Pipeline
+1. **Stage** — Fetch data concurrently from GitHub, Discord, Notion, and local files. Deduplicate by SHA-256 content hash, and buffer via `cognee.add()`. No LLM calls, no embedding costs.
+2. **Cognify** — A single `cognee.cognify()` pass processes the entire buffer: generates embeddings, extracts entities, and builds the knowledge graph.
+
+### Incremental Synchronization
+Tracks `last_synced_at` per project. Subsequent syncs only pull data newer than the last timestamp — lightning-fast background jobs that keep the graph fresh without re-processing everything.
+
+### Smart Chat Interface
+Context-aware chat with grounded LLM responses and specialized slash commands:
+
+<!-- 📸 Add your Chat Interface screenshot or GIF below -->
+![Chat Interface Demo](assets/chat.png)
+
+| Command | Description |
+|---------|-------------|
+| `/issue <title>` | Create a GitHub Issue from chat |
+| `/notion <title>` | Create a Notion page |
+| `iss{N} <question>` | Fetch and discuss a specific Issue *(No slash needed for lightning-fast lookups)* |
+| `pr{N} <question>` | Fetch and discuss a Pull Request *(No slash needed)* |
+| `diff{N}` | AI-powered explanation of a PR's code changes |
+| `/contributors` | List all contributors with commit counts |
+| `@username` | Get a contributor's activity summary |
+
+### Auto-Review Scheduler
+A background worker that continuously polls GitHub for new Issues and PRs, queries the knowledge graph for historical context, generates an AI review, and posts it automatically as a GitHub comment.
+
+### REST API & Project Management
+Full API under `/api/v1` for project CRUD, ingestion/sync triggers, and chat. Interactive docs at `localhost:8000/docs`. Projects securely store per-platform API tokens (GitHub PAT, Notion, Discord).
 
 ---
 
 ## 🏗️ Architecture
 
-Repollect is built around a GraphRAG architecture split into three main flows:
+<!-- 📸 Add your Architecture Diagram below -->
+![Architecture Diagram](assets/arch.png)
 
-1. **Incremental Ingestion Pipeline:**
-   Users add API tokens for external platforms. The backend queries GitHub, Notion, and Discord for data updated since the last sync. Data is normalized into markdown and staged into the **Cognee Buffer**. A single `cognify()` pass then processes all buffered data into embeddings and graph nodes, storing relationships across data silos.
-2. **Context-Aware Chat:**
-   When a user submits a query, the backend performs a semantic search across the Knowledge Graph. For specialized slash commands (like `pr12`), a real-time fetch to the GitHub API pulls live data. Both the live data and the graph context are injected into the Groq LLM prompt for highly accurate generation.
-3. **Background Auto-Reviewer:**
-   An asynchronous loop continuously polls GitHub for newly opened Issues and PRs. It queries the Knowledge Graph for historical context regarding the touched code/topic, generates a helpful AI review, and automatically posts it as a GitHub comment.
+*Data flows from external APIs into the Ingestion Layer, is deduplicated and cognified into the Cognee Graph-Vector store, and is served to users via the Chat Interface and Background Auto-Reviewer.*
 
 ---
 
@@ -57,30 +87,18 @@ cognee/
 │   ├── api/
 │   │   ├── handlers/           # Core business logic (chat, ingest, sync)
 │   │   └── routes/             # FastAPI endpoints
-│   ├── ingest/                 # Platform-specific data extractors
-│   │   ├── discord/
-│   │   ├── files/
-│   │   ├── github/
-│   │   └── notion/
-│   ├── internal/               # Background tasks
-│   │   └── scheduler.py        # GitHub auto-reviewer loop
-│   ├── tool/                   # Chat-invoked live API tools
-│   │   ├── comment.py          # Post GitHub comments
-│   │   ├── fetch_contributor.py# Get user profiles
-│   │   ├── fetch_diff.py       # Get PR diffs
-│   │   ├── fetch_issue.py      # Get live issue data
-│   │   └── pages.py            # Create Notion pages
+│   ├── ingest/                 # Platform-specific data extractors (discord, github, notion)
+│   ├── internal/               # Background tasks (scheduler.py)
+│   ├── tool/                   # Chat-invoked live API tools (fetch_issue, fetch_diff, comment)
 │   ├── utils/                  # Cognee GraphRAG utilities
 │   ├── db.py                   # SQLite database initialization
 │   └── main.py                 # Application entry point
 │
-└── ui/                         # React Frontend
-    ├── src/
-    │   ├── AddProject.tsx      # Project creation UI
-    │   ├── BrowseProjects.tsx  # Project list and sync dashboard
-    │   ├── ChatView.tsx        # LLM interface with slash commands
-    │   └── App.tsx             # Main routing
-    └── package.json
+└── ui/                         # React Frontend (Vite + TypeScript)
+    └── src/
+        ├── AddProject.tsx      # Project creation UI
+        ├── BrowseProjects.tsx  # Project list and sync dashboard
+        └── ChatView.tsx        # LLM interface with slash commands
 ```
 
 ---
@@ -104,7 +122,7 @@ npm install
 ```
 
 ### 2. Environment Variables (`app/.env`)
-Create a `.env` file in the `app/` directory with the following structure:
+Create a `.env` file in the `app/` directory:
 
 ```env
 # LLM & Embeddings (Ollama local fallback)
@@ -144,66 +162,36 @@ npm run dev
 
 ## 🔑 How to get API Keys
 
-### Groq API Key
-Used for fast LLM inference in the chat interface.
-1. Go to [Groq Console](https://console.groq.com/).
-2. Sign in and navigate to **API Keys**.
-3. Click **Create API Key**, copy it, and paste it as `GROQ_API`.
-
-### GitHub PAT (Personal Access Token)
-Required to fetch private repos, read issues/PRs, and post comments.
-1. Go to your [GitHub Settings > Developer Settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens).
-2. Click **Generate new token (classic)**.
-3. Give it a name and select the `repo` scope (full control of private repositories).
-4. Generate the token and paste it as `GITHUB_PAT_TOKEN`.
-
-### Notion Integration Token
-Required to search and read/write Notion pages.
-1. Go to [Notion My Integrations](https://www.notion.so/my-integrations).
-2. Click **New integration**.
-3. Name it "Repollect", select the associated workspace, and save.
-4. Copy the **Internal Integration Secret** and paste it as `NOTION_TOKEN`.
-5. **CRITICAL:** You must manually share the Notion pages/databases you want Repollect to access. Open a page in Notion, click the `...` menu in the top right, go to **Add connections**, and select your "Repollect" integration.
-
-### Discord Bot Token
-Required to read channel messages for the knowledge graph.
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Click **New Application** and name it "Repollect".
-3. Go to the **Bot** tab on the left.
-4. Under **Privileged Gateway Intents**, enable **Message Content Intent** (crucial for reading messages).
-5. Click **Reset Token** to generate a new token. Copy it and paste it as `DISCORD_BOT_TOKEN`.
-6. Go to **OAuth2 > URL Generator**.
-7. Check the `bot` scope.
-8. Under **Bot Permissions**, check `Read Messages/View Channels` and `Read Message History`.
-9. Copy the generated URL at the bottom, paste it into your browser, and invite the bot to your server.
+- **Groq API Key:** Go to [Groq Console](https://console.groq.com/) > API Keys.
+- **GitHub PAT:** Go to [GitHub Settings](https://github.com/settings/tokens). Select `repo` scope.
+- **Notion Token:** Go to [Notion Integrations](https://www.notion.so/my-integrations). *Crucial: Manually share target Notion pages with your integration!*
+- **Discord Bot Token:** Go to [Discord Developer Portal](https://discord.com/developers/applications). Enable **Message Content Intent**.
 
 ---
 
 ## 🔮 Future Upgrades / Roadmap
 
-Repollect is designed to evolve from a passive knowledge base into an active, intelligent contributor. Here is what is planned next:
+* **Expanded Integrations:** Native support for Slack, Linear, Jira, and GitLab.
+* **Auto-PR for Known Fixes:** Automatically generate a draft PR with a historical fix applied when a new bug matches a known pattern in the graph.
+* **Knowledge Gap Detection:** Automatically open GitHub Discussions when users ask questions that have no answer in the knowledge graph.
+* **MCP Server Integration:** Expose RepoCollect's slash commands and search directly to IDEs (Cursor, Windsurf) and Claude Desktop.
 
-### 1. Expanded Integration Ecosystem
-* **Communication:** Slack (channels, threads, files) and Email (engineering mailing lists, RFCs).
-* **Project Management:** Linear and Jira integration for tracking epics and sprints.
-* **Knowledge Bases:** Confluence, Static Documentation Sites (Docusaurus, Mintlify, GitBook), and YouTube/Loom transcript processing.
-* **Code Forges:** GitLab support mirroring our GitHub pipeline.
+---
 
-### 2. Advanced Action Tools
-* **Issue Triage & Labeling:** Automatically deduplicate incoming issues, suggest labels, and assign maintainers based on historical expertise.
-* **Auto-PR for Known Fixes:** When a bug matches a known pattern in the knowledge graph, automatically generate a draft PR with the historical fix applied.
-* **Context-Aware Reply Suggestions:** Draft responses for maintainers grounded entirely in project history (e.g., *"This was tried in PR #482..."*).
-* **Knowledge Gap Detection:** Identify unanswered questions in Discord or GitHub and automatically open GitHub Discussions to document the missing context.
-* **Project Health Dashboard:** Track "decision debt," locate domain experts, and measure documentation coverage across the codebase.
+## 🤝 Contributing
 
-### 3. Model Context Protocol (MCP) Server
-Expose Repollect's slash commands and search capabilities via an **MCP Server** so developers can query the project knowledge graph directly from their IDEs (Cursor, Windsurf) or desktop AI assistants (Claude Desktop).
+Contributions, issues, and feature requests are welcome!  
+Feel free to check out the [issues page](#) if you want to contribute. We'd love to see RepoCollect grow to support more integrations.
+
+## 📜 License
+
+This project is licensed under the MIT License.
 
 ---
 
 ## 💝 Acknowledgments
 
-- **[Cognee](https://cognee.ai)** — The graph-vector hybrid memory that makes Repollect's knowledge graph possible.
+- **[Cognee](https://cognee.ai)** — The graph-vector hybrid memory that makes RepoCollect's knowledge graph possible.
 - **[WeMakeDevs](https://wemakedevs.org)** — For organizing the hackathon and bringing together builders.
 - Every open source project whose public history helped shape and test this tool.
 
